@@ -1,0 +1,94 @@
+                         ┌──────────────────┐
+                         │    GYM_OWNER     │
+                         ├──────────────────┤
+                         │ PK owner_id      │
+                         │ name             │
+                         │ email            │
+                         │ password         │
+                         │ phone            │
+                         └────────┬─────────┘
+                                  │
+                         1        │        N
+                                  │
+                 ┌────────────────┴───────────────┐
+                 │                                │
+                 ▼                                ▼
+        ┌──────────────────┐             ┌──────────────────┐
+        │      MEMBER      │             │ MEMBERSHIP_PLAN  │
+        ├──────────────────┤             ├──────────────────┤
+        │ PK member_id     │             │ PK plan_id       │
+        │ FK owner_id      │             │ FK owner_id      │
+        │ name             │             │ plan_name        │
+        │ phone            │             │ price            │
+        │ email            │             │ duration_months  │
+        │ joining_date     │             │ description      │
+        │ status           │             └────────┬─────────┘
+        └────────┬─────────┘                      │
+                 │                                │
+                 │ 1                              │ N
+                 │                                │
+                 │         ┌──────────────────────┘
+                 │         │
+                 │         ▼
+                 │  ┌────────────────────────┐
+                 └─►│   MEMBER_MEMBERSHIP    │
+                    ├────────────────────────┤
+                    │ PK membership_id       │
+                    │ FK member_id           │
+                    │ FK plan_id             │
+                    │ start_date             │
+                    │ end_date               │
+                    │ status                 │
+                    └───────────┬────────────┘
+                                │
+                                │ 1
+                                │
+                                │ N
+                                ▼
+                         ┌───────────────┐
+                         │    PAYMENT    │
+                         ├───────────────┤
+                         │ PK payment_id │
+                         │ FK member_id  │
+                         │ FK membership │
+                         │ amount        │
+                         │ payment_date  │
+                         │ method        │
+                         │ status        │
+                         └───────────────┘
+
+
+        MEMBER
+          │
+          │ 1
+          │
+       ┌──┴───────────────┐
+       │                  │
+       │ N                │ N
+       ▼                  ▼
+┌───────────────┐   ┌─────────────────┐
+│  ATTENDANCE   │   │  WEIGHT_RECORD  │
+├───────────────┤   ├─────────────────┤
+│ PK attendance │   │ PK weight_id    │
+│ FK member_id  │   │ FK member_id    │
+│ date          │   │ weight          │
+│ time          │   │ recorded_date   │
+└───────────────┘   └─────────────────┘
+
+
+        GYM_OWNER
+            │
+            │ 1
+            │
+            │ 1
+            ▼
+   ┌─────────────────┐
+   │  GYM_SETTINGS   │
+   ├─────────────────┤
+   │ PK setting_id   │
+   │ FK owner_id     │
+   │ gym_name        │
+   │ address         │
+   │ wifi_name       │
+   │ wifi_password   │
+   └─────────────────┘

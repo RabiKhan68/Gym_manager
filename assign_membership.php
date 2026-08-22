@@ -1,0 +1,754 @@
+<?php
+
+session_start();
+
+require_once "backend/db.php";
+
+
+/*
+|--------------------------------------------------------------------------
+| Check login
+|--------------------------------------------------------------------------
+*/
+
+if (!isset($_SESSION["owner_id"])) {
+
+    header("Location: login.php");
+    exit();
+
+}
+
+
+$owner_id = $_SESSION["owner_id"];
+
+
+/*
+|--------------------------------------------------------------------------
+| Get owner's gym
+|--------------------------------------------------------------------------
+*/
+
+$sql = "SELECT
+            gym_id,
+            gym_name
+        FROM gyms
+        WHERE owner_id = ?";
+
+
+$stmt = $conn->prepare($sql);
+
+$stmt->bind_param(
+    "i",
+    $owner_id
+);
+
+$stmt->execute();
+
+$result = $stmt->get_result();
+
+$gym = $result->fetch_assoc();
+
+
+if (!$gym) {
+
+    die("Gym not found.");
+
+}
+
+
+$gym_id = $gym["gym_id"];
+
+
+/*
+|--------------------------------------------------------------------------
+| Get active members
+|--------------------------------------------------------------------------
+*/
+
+$sql = "SELECT
+            member_id,
+            name,
+            phone
+        FROM members
+        WHERE gym_id = ?
+        AND status = 'active'
+        ORDER BY name";
+
+
+$stmt = $conn->prepare($sql);
+
+$stmt->bind_param(
+    "i",
+    $gym_id
+);
+
+$stmt->execute();
+
+$members = $stmt->get_result();
+
+
+/*
+|--------------------------------------------------------------------------
+| Get membership plans
+|--------------------------------------------------------------------------
+*/
+
+$sql = "SELECT
+            plan_id,
+            plan_name,
+            price,
+            duration_months,
+            description
+        FROM membership_plans
+        WHERE gym_id = ?
+        ORDER BY plan_name";
+
+
+$stmt = $conn->prepare($sql);
+
+$stmt->bind_param(
+    "i",
+    $gym_id
+);
+
+$stmt->execute();
+
+$plans = $stmt->get_result();
+
+?>
+
+
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        Assign Membership
+    </title>
+
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+
+        body {
+
+            margin: 0;
+
+            font-family:
+                Arial,
+                sans-serif;
+
+            background: #f4f6f8;
+
+            color: #222;
+
+        }
+
+
+        .container {
+
+            max-width: 650px;
+
+            margin: 50px auto;
+
+            padding: 20px;
+
+        }
+
+
+        .card {
+
+            background: white;
+
+            padding: 30px;
+
+            border-radius: 12px;
+
+            box-shadow:
+                0 4px 15px
+                rgba(0,0,0,0.08);
+
+        }
+
+
+        h1 {
+
+            margin-top: 0;
+
+            margin-bottom: 8px;
+
+        }
+
+
+        .subtitle {
+
+            color: #666;
+
+            margin-bottom: 25px;
+
+        }
+
+
+        .gym-name {
+
+            font-weight: bold;
+
+            color: #2563eb;
+
+        }
+
+
+        .form-group {
+
+            margin-bottom: 22px;
+
+        }
+
+
+        label {
+
+            display: block;
+
+            font-weight: bold;
+
+            margin-bottom: 8px;
+
+        }
+
+
+        select,
+        input {
+
+            width: 100%;
+
+            padding: 12px;
+
+            border: 1px solid #d1d5db;
+
+            border-radius: 7px;
+
+            font-size: 15px;
+
+            background: white;
+
+        }
+
+
+        select:focus,
+        input:focus {
+
+            outline: none;
+
+            border-color: #2563eb;
+
+            box-shadow:
+                0 0 0 2px
+                rgba(37,99,235,0.1);
+
+        }
+
+
+        .hint {
+
+            display: block;
+
+            margin-top: 6px;
+
+            font-size: 13px;
+
+            color: #777;
+
+        }
+
+
+        .plan-info {
+
+            margin-top: 10px;
+
+            padding: 12px;
+
+            background: #f8fafc;
+
+            border-radius: 7px;
+
+            color: #555;
+
+            display: none;
+
+        }
+
+
+        .buttons {
+
+            display: flex;
+
+            gap: 10px;
+
+            margin-top: 25px;
+
+        }
+
+
+        button {
+
+            flex: 1;
+
+            border: none;
+
+            padding: 12px 20px;
+
+            border-radius: 7px;
+
+            background: #2563eb;
+
+            color: white;
+
+            font-size: 15px;
+
+            cursor: pointer;
+
+        }
+
+
+        button:hover {
+
+            background: #1d4ed8;
+
+        }
+
+
+        .back {
+
+            flex: 1;
+
+            padding: 12px 20px;
+
+            border-radius: 7px;
+
+            background: #e5e7eb;
+
+            color: #222;
+
+            text-decoration: none;
+
+            text-align: center;
+
+        }
+
+
+        .back:hover {
+
+            background: #d1d5db;
+
+        }
+
+
+        @media (max-width: 600px) {
+
+            .container {
+
+                margin: 20px auto;
+
+            }
+
+            .card {
+
+                padding: 20px;
+
+            }
+
+            .buttons {
+
+                flex-direction: column;
+
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+<div class="container">
+
+
+    <div class="card">
+
+
+        <h1>
+            Assign Membership
+        </h1>
+
+
+        <p class="subtitle">
+
+            Assign a membership plan to a member of
+
+            <span class="gym-name">
+
+                <?php
+
+                echo htmlspecialchars(
+                    $gym["gym_name"]
+                );
+
+                ?>
+
+            </span>
+
+        </p>
+
+
+        <form
+            action="backend/assign_membership.php"
+            method="POST"
+        >
+
+
+            <!-- MEMBER -->
+
+            <div class="form-group">
+
+                <label for="member_id">
+
+                    Member
+
+                </label>
+
+
+                <select
+                    name="member_id"
+                    id="member_id"
+                    required
+                >
+
+                    <option value="">
+
+                        Select Member
+
+                    </option>
+
+
+                    <?php while (
+                        $member =
+                        $members->fetch_assoc()
+                    ): ?>
+
+                        <option
+                            value="<?php
+                                echo $member["member_id"];
+                            ?>"
+                        >
+
+                            <?php
+
+                            echo htmlspecialchars(
+                                $member["name"]
+                            );
+
+                            ?>
+
+                            <?php if (
+                                !empty(
+                                    $member["phone"]
+                                )
+                            ): ?>
+
+                                -
+                                <?php
+
+                                echo htmlspecialchars(
+                                    $member["phone"]
+                                );
+
+                                ?>
+
+                            <?php endif; ?>
+
+                        </option>
+
+                    <?php endwhile; ?>
+
+                </select>
+
+            </div>
+
+
+
+            <!-- PLAN -->
+
+            <div class="form-group">
+
+                <label for="plan_id">
+
+                    Membership Plan
+
+                </label>
+
+
+                <select
+                    name="plan_id"
+                    id="plan_id"
+                    required
+                >
+
+                    <option value="">
+
+                        Select Membership Plan
+
+                    </option>
+
+
+                    <?php while (
+                        $plan =
+                        $plans->fetch_assoc()
+                    ): ?>
+
+                        <option
+                            value="<?php
+                                echo $plan["plan_id"];
+                            ?>"
+                            data-price="<?php
+                                echo htmlspecialchars(
+                                    $plan["price"]
+                                );
+                            ?>"
+                            data-duration="<?php
+                                echo htmlspecialchars(
+                                    $plan["duration_months"]
+                                );
+                            ?>"
+                        >
+
+                            <?php
+
+                            echo htmlspecialchars(
+                                $plan["plan_name"]
+                            );
+
+                            ?>
+
+                            -
+
+                            Rs.
+
+                            <?php
+
+                            echo number_format(
+                                $plan["price"],
+                                2
+                            );
+
+                            ?>
+
+                            -
+
+                            <?php
+
+                            echo $plan[
+                                "duration_months"
+                            ];
+
+                            ?>
+
+                            month<?php
+                                echo
+                                    $plan[
+                                        "duration_months"
+                                    ] == 1
+                                    ? ""
+                                    : "s";
+                            ?>
+
+                        </option>
+
+                    <?php endwhile; ?>
+
+                </select>
+
+
+                <div
+                    id="planInfo"
+                    class="plan-info"
+                >
+
+                    <strong>
+                        Selected Plan
+                    </strong>
+
+                    <br>
+
+                    Price:
+                    Rs.
+                    <span id="planPrice">
+                        -
+                    </span>
+
+                    <br>
+
+                    Duration:
+                    <span id="planDuration">
+                        -
+                    </span>
+
+                </div>
+
+            </div>
+
+
+
+            <!-- START DATE -->
+
+            <div class="form-group">
+
+                <label for="start_date">
+
+                    Start Date
+
+                </label>
+
+
+                <input
+                    type="date"
+                    name="start_date"
+                    id="start_date"
+                    value="<?php
+                        echo date("Y-m-d");
+                    ?>"
+                    required
+                >
+
+
+                <span class="hint">
+
+                    The membership expiry date will
+                    be calculated automatically from
+                    the selected plan's duration.
+
+                </span>
+
+            </div>
+
+
+
+            <!-- BUTTONS -->
+
+            <div class="buttons">
+
+                <button type="submit">
+
+                    Assign Membership
+
+                </button>
+
+
+                <a
+                    href="members.php"
+                    class="back"
+                >
+
+                    Cancel
+
+                </a>
+
+            </div>
+
+
+        </form>
+
+
+    </div>
+
+
+</div>
+
+
+
+<script>
+
+const planSelect =
+    document.getElementById("plan_id");
+
+const planInfo =
+    document.getElementById("planInfo");
+
+const planPrice =
+    document.getElementById("planPrice");
+
+const planDuration =
+    document.getElementById("planDuration");
+
+
+planSelect.addEventListener(
+    "change",
+    function () {
+
+        const option =
+            this.options[this.selectedIndex];
+
+
+        if (!option.value) {
+
+            planInfo.style.display =
+                "none";
+
+            return;
+
+        }
+
+
+        const price =
+            option.dataset.price;
+
+        const duration =
+            option.dataset.duration;
+
+
+        planPrice.textContent =
+            Number(price).toLocaleString(
+                "en-PK",
+                {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                }
+            );
+
+
+        planDuration.textContent =
+            duration +
+            (
+                duration == 1
+                    ? " month"
+                    : " months"
+            );
+
+
+        planInfo.style.display =
+            "block";
+
+    }
+);
+
+</script>
+
+
+</body>
+
+</html>

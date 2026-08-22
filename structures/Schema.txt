@@ -1,0 +1,19 @@
+Schema / Design:
+                    gym_owners
+                         │
+          ┌──────────────┼──────────────┐
+          │              │              │
+          ▼              ▼              ▼
+       members      membership_plans  gym_settings
+          │
+          │
+          ▼
+   member_memberships
+          │
+          ├──────────────► payments
+          │
+          │
+          └──────────────► attendance
+          │
+          │
+          └──────────────► weight_records
