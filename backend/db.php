@@ -1,15 +1,17 @@
 <?php
 
-$host = "localhost";
-$dbname = "fitness_management";
-$username = "root";
-$password = "";
+$host = getenv("DB_HOST");
+$port = getenv("DB_PORT") ?: 3306;
+$dbname = getenv("DB_NAME");
+$username = getenv("DB_USER");
+$password = getenv("DB_PASSWORD");
 
 $conn = new mysqli(
     $host,
     $username,
     $password,
-    $dbname
+    $dbname,
+    $port
 );
 
 if ($conn->connect_error) {
