@@ -503,344 +503,7 @@ function createWhatsAppUrl(
         Member Details
     </title>
 
-
-    <style>
-
-        * {
-            box-sizing: border-box;
-        }
-
-
-        body {
-
-            margin: 0;
-
-            font-family:
-                Arial,
-                sans-serif;
-
-            background: #f4f6f8;
-
-            color: #222;
-
-        }
-
-
-        .container {
-
-            max-width: 1100px;
-
-            margin: auto;
-
-            padding: 30px;
-
-        }
-
-
-        .header {
-
-            display: flex;
-
-            justify-content:
-                space-between;
-
-            align-items: center;
-
-            margin-bottom: 25px;
-
-        }
-
-
-        .header h1 {
-
-            margin: 0;
-
-        }
-
-
-        .back {
-
-            text-decoration: none;
-
-            color: #2563eb;
-
-        }
-
-
-        .grid {
-
-            display: grid;
-
-            grid-template-columns:
-                repeat(2, 1fr);
-
-            gap: 20px;
-
-        }
-
-
-        .card {
-
-            background: white;
-
-            padding: 25px;
-
-            border-radius: 12px;
-
-            box-shadow:
-                0 3px 12px
-                rgba(0,0,0,0.06);
-
-        }
-
-
-        .card h2 {
-
-            margin-top: 0;
-
-        }
-
-
-        .full {
-
-            grid-column:
-                1 / -1;
-
-        }
-
-
-        .info-row {
-
-            display: flex;
-
-            justify-content:
-                space-between;
-
-            gap: 20px;
-
-            padding: 10px 0;
-
-            border-bottom:
-                1px solid #eee;
-
-        }
-
-
-        .label {
-
-            color: #666;
-
-        }
-
-
-        .active {
-
-            color: green;
-
-            font-weight: bold;
-
-        }
-
-
-        .inactive {
-
-            color: red;
-
-            font-weight: bold;
-
-        }
-
-
-        .paid {
-
-            color: green;
-
-            font-weight: bold;
-
-            font-size: 20px;
-
-        }
-
-
-        .unpaid {
-
-            color: red;
-
-            font-weight: bold;
-
-            font-size: 20px;
-
-        }
-
-
-        .stat {
-
-            font-size: 35px;
-
-            font-weight: bold;
-
-        }
-
-
-        table {
-
-            width: 100%;
-
-            border-collapse:
-                collapse;
-
-        }
-
-
-        th,
-        td {
-
-            padding: 12px;
-
-            text-align: left;
-
-            border-bottom:
-                1px solid #eee;
-
-        }
-
-
-        th {
-
-            background:
-                #f8fafc;
-
-        }
-
-
-        .no-data {
-
-            color: #777;
-
-            padding: 10px 0;
-
-        }
-
-
-        .button {
-
-            display: inline-block;
-
-            padding: 10px 16px;
-
-            background:
-                #111827;
-
-            color: white;
-
-            text-decoration: none;
-
-            border-radius: 7px;
-
-        }
-
-
-        .receipt-button {
-
-            display: inline-block;
-
-            padding: 8px 12px;
-
-            background:
-                #2563eb;
-
-            color: white;
-
-            text-decoration: none;
-
-            border-radius: 6px;
-
-            margin-right: 5px;
-
-        }
-
-
-        .whatsapp-button {
-
-            display: inline-block;
-
-            padding: 8px 12px;
-
-            background:
-                #25D366;
-
-            color: white;
-
-            text-decoration: none;
-
-            border-radius: 6px;
-
-        }
-
-
-        .receipt-button:hover,
-        .whatsapp-button:hover,
-        .button:hover {
-
-            opacity: 0.85;
-
-        }
-
-
-        .action-buttons {
-
-            display: flex;
-
-            gap: 6px;
-
-            flex-wrap: wrap;
-
-        }
-
-
-        @media (max-width: 800px) {
-
-            .grid {
-
-                grid-template-columns:
-                    1fr;
-
-            }
-
-
-            .full {
-
-                grid-column:
-                    auto;
-
-            }
-
-
-            .container {
-
-                padding: 15px;
-
-            }
-
-
-            table {
-
-                font-size: 13px;
-
-            }
-
-
-            th,
-            td {
-
-                padding: 8px;
-
-            }
-
-        }
-
-    </style>
-
+    <link rel = "stylesheet" href = "css/member_details.css">
 </head>
 
 
@@ -876,7 +539,8 @@ function createWhatsAppUrl(
 
                 <span class="active">
 
-                    🟢 Active
+                    <img src = "images/circle.png" class="stat-icon" alt="Gym">
+                Active
 
                 </span>
 
@@ -884,7 +548,8 @@ function createWhatsAppUrl(
 
                 <span class="inactive">
 
-                    🔴 Inactive
+                    <img src = "images/delete.png" class="stat-icon" alt="Gym">
+                Inactive
 
                 </span>
 
@@ -918,7 +583,8 @@ function createWhatsAppUrl(
         <div class="card">
 
             <h2>
-                👤 Personal Information
+                <img src = "images/group-users.png" class="stat-icon" alt="Gym">
+            Personal Information
             </h2>
 
 
@@ -1018,7 +684,8 @@ function createWhatsAppUrl(
         <div class="card">
 
             <h2>
-                📅 Attendance
+                <img src = "images/calendar.png" class="stat-icon" alt="Gym">
+            Attendance
             </h2>
 
 
@@ -1051,7 +718,8 @@ function createWhatsAppUrl(
         <div class="card">
 
             <h2>
-                💳 Current Membership
+                <img src = "images/gym.png" class="stat-icon" alt="Gym">
+            Current Membership
             </h2>
 
 
@@ -1184,7 +852,8 @@ function createWhatsAppUrl(
         <div class="card">
 
             <h2>
-                💰 This Month's Payment
+                <img src = "images/debit-card.png" class="revenue-icon" alt="Gym">
+            This Month's Payment
             </h2>
 
 
@@ -1199,7 +868,8 @@ function createWhatsAppUrl(
 
                 <p class="paid">
 
-                    🟢 PAID
+                    <img src = "images/money.png" class="stat-icon" alt="Gym">
+                PAID
 
                 </p>
 
@@ -1290,7 +960,8 @@ function createWhatsAppUrl(
                         class="receipt-button"
                     >
 
-                        🧾 View Receipt
+                        <img src = "images/receipt.png" class="stat-icon" alt="Gym">
+                    View Receipt
 
                     </a>
 
@@ -1346,7 +1017,8 @@ function createWhatsAppUrl(
                             class="whatsapp-button"
                         >
 
-                            💬 WhatsApp
+                            <img src = "images/whatsapp.png" class = "stat-icon" alt = "whatsapp">
+                        WhatsApp
 
                         </a>
 
@@ -1360,7 +1032,8 @@ function createWhatsAppUrl(
 
                 <p class="unpaid">
 
-                    🔴 UNPAID
+                    <img src = "images/delete.png" class = "stat-icon" alt = "whatsapp">
+                UNPAID
 
                 </p>
 
@@ -1384,7 +1057,8 @@ function createWhatsAppUrl(
         <div class="card full">
 
             <h2>
-                💰 Payment History
+                <img src = "images/money.png" class = "stat-icon" alt = "whatsapp">
+            Payment History
             </h2>
 
 
@@ -1580,7 +1254,8 @@ function createWhatsAppUrl(
                                             class="receipt-button"
                                         >
 
-                                            🧾 Receipt
+                                            <img src = "images/receipt.png" class = "stat-icon" alt = "whatsapp">
+                                        Receipt
 
                                         </a>
 
@@ -1645,7 +1320,8 @@ function createWhatsAppUrl(
                                                 class="whatsapp-button"
                                             >
 
-                                                💬 WhatsApp
+                                                <img src = "images/whatsapp.png" class = "stat-icon" alt = "whatsapp">
+                                            WhatsApp
 
                                             </a>
 
@@ -1695,7 +1371,8 @@ function createWhatsAppUrl(
         <div class="card full">
 
             <h2>
-                📅 Attendance History
+                <img src = "images/calendar.png" class = "stat-icon" alt = "whatsapp">
+            Attendance History
             </h2>
 
 

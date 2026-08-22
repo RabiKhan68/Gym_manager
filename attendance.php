@@ -219,240 +219,8 @@ $qr_data_uri =
         Attendance Mode
     </title>
 
-
-    <style>
-
-        * {
-            box-sizing: border-box;
-        }
-
-
-        body {
-
-            margin: 0;
-
-            font-family:
-                Arial,
-                Helvetica,
-                sans-serif;
-
-            background: #f4f6f8;
-
-            color: #222;
-
-        }
-
-
-        .header {
-
-            background: #111827;
-
-            color: white;
-
-            padding: 20px 30px;
-
-            display: flex;
-
-            justify-content:
-                space-between;
-
-            align-items: center;
-
-        }
-
-
-        .gym-name {
-
-            font-size: 26px;
-
-            font-weight: bold;
-
-        }
-
-
-        .attendance-mode {
-
-            font-size: 14px;
-
-            opacity: 0.8;
-
-        }
-
-
-        .container {
-
-            max-width: 1200px;
-
-            margin: auto;
-
-            padding: 30px;
-
-        }
-
-
-        .main-grid {
-
-            display: grid;
-
-            grid-template-columns:
-                1fr 1fr;
-
-            gap: 30px;
-
-        }
-
-
-        .card {
-
-            background: white;
-
-            border-radius: 15px;
-
-            padding: 30px;
-
-            box-shadow:
-                0 4px 15px
-                rgba(0,0,0,0.08);
-
-        }
-
-
-        .qr-section {
-
-            text-align: center;
-
-        }
-
-
-        .qr-section h1 {
-
-            font-size: 30px;
-
-            margin-top: 0;
-
-        }
-
-
-        .qr-image {
-
-            width: 400px;
-
-            max-width: 100%;
-
-            height: auto;
-
-        }
-
-
-        .timer {
-
-            margin-top: 15px;
-
-            font-size: 20px;
-
-        }
-
-
-        #timer {
-
-            font-weight: bold;
-
-        }
-
-
-        .total {
-
-            margin-top: 25px;
-
-            font-size: 22px;
-
-            font-weight: bold;
-
-        }
-
-
-        .attendance-list {
-
-            max-height: 500px;
-
-            overflow-y: auto;
-
-        }
-
-
-        .attendance-row {
-
-            display: flex;
-
-            justify-content:
-                space-between;
-
-            align-items: center;
-
-            padding: 15px;
-
-            border-bottom:
-                1px solid #eee;
-
-        }
-
-
-        .member-name {
-
-            font-weight: bold;
-
-        }
-
-
-        .attendance-time {
-
-            color: #666;
-
-        }
-
-
-        .present {
-
-            color: green;
-
-            font-weight: bold;
-
-        }
-
-
-        .exit-button {
-
-            display: inline-block;
-
-            margin-top: 30px;
-
-            padding: 12px 25px;
-
-            background: #111827;
-
-            color: white;
-
-            text-decoration: none;
-
-            border-radius: 8px;
-
-        }
-
-
-        @media (max-width: 800px) {
-
-            .main-grid {
-
-                grid-template-columns: 1fr;
-
-            }
-
-        }
-
-    </style>
-
+    <link rel = "stylesheet" href= "css/attendance.css">
 </head>
-
 
 <body>
 
@@ -539,7 +307,8 @@ $qr_data_uri =
 
             <div class="total">
 
-                👥 Today's Check-ins:
+                <img src = "images/group-users.png" class = "stat-icon" alt = "group">
+            Today's Check-ins:
 
                 <span id="total-attendance">
 
@@ -619,32 +388,31 @@ $qr_data_uri =
 
 let seconds = 60;
 
+const timer = document.getElementById("timer");
 
-const timer =
-    document.getElementById("timer");
-
-
-function countdown() {
+const countdownInterval = setInterval(function () {
 
     seconds--;
 
-    timer.textContent =
-        seconds;
-
-
+    // Never allow the displayed value to go below 0
     if (seconds <= 0) {
 
+        seconds = 0;
+
+        timer.textContent = seconds;
+
+        // Stop the countdown so it cannot go negative
+        clearInterval(countdownInterval);
+
+        // Reload the page to generate a completely new QR code
         window.location.reload();
 
+        return;
     }
 
-}
+    timer.textContent = seconds;
 
-
-setInterval(
-    countdown,
-    1000
-);
+}, 1000);
 
 
 

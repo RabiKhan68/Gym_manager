@@ -370,347 +370,7 @@ $unpaid_result =
         Dashboard
     </title>
 
-
-    <style>
-
-        * {
-            box-sizing: border-box;
-        }
-
-
-        body {
-
-            margin: 0;
-
-            font-family:
-                Arial,
-                sans-serif;
-
-            background: #f4f6f8;
-
-            color: #1f2937;
-
-        }
-
-
-        .container {
-
-            max-width: 1200px;
-
-            margin: auto;
-
-            padding: 30px;
-
-        }
-
-
-        /* HEADER */
-
-        .header {
-
-            display: flex;
-
-            justify-content:
-                space-between;
-
-            align-items: center;
-
-            margin-bottom: 30px;
-
-        }
-
-
-        .header h1 {
-
-            margin: 0;
-
-            font-size: 28px;
-
-        }
-
-
-        .header p {
-
-            margin: 5px 0 0;
-
-            color: #6b7280;
-
-        }
-
-
-        .logout {
-
-            text-decoration: none;
-
-            color: #dc2626;
-
-            font-weight: bold;
-
-        }
-
-
-        /* STATS */
-
-        .stats {
-
-            display: grid;
-
-            grid-template-columns:
-                repeat(4, 1fr);
-
-            gap: 20px;
-
-            margin-bottom: 25px;
-
-        }
-
-
-        .stat-card {
-
-            background: white;
-
-            padding: 22px;
-
-            border-radius: 12px;
-
-            box-shadow:
-                0 3px 12px
-                rgba(0,0,0,0.06);
-
-        }
-
-
-        .stat-title {
-
-            color: #6b7280;
-
-            font-size: 14px;
-
-            margin-bottom: 10px;
-
-        }
-
-
-        .stat-number {
-
-            font-size: 32px;
-
-            font-weight: bold;
-
-        }
-
-
-        /* QUICK ACTIONS */
-
-        .card {
-
-            background: white;
-
-            padding: 25px;
-
-            border-radius: 12px;
-
-            box-shadow:
-                0 3px 12px
-                rgba(0,0,0,0.06);
-
-            margin-bottom: 25px;
-
-        }
-
-
-        .card h2 {
-
-            margin-top: 0;
-
-        }
-
-
-        .actions {
-
-            display: flex;
-
-            flex-wrap: wrap;
-
-            gap: 12px;
-
-        }
-
-
-        .action {
-
-            display: inline-block;
-
-            padding: 12px 18px;
-
-            background: #111827;
-
-            color: white;
-
-            text-decoration: none;
-
-            border-radius: 8px;
-
-        }
-
-
-        .action:hover {
-
-            opacity: 0.85;
-
-        }
-
-
-        /* TWO COLUMN */
-
-        .two-column {
-
-            display: grid;
-
-            grid-template-columns:
-                1fr 1fr;
-
-            gap: 25px;
-
-        }
-
-
-        /* TABLE */
-
-        table {
-
-            width: 100%;
-
-            border-collapse:
-                collapse;
-
-        }
-
-
-        th,
-        td {
-
-            padding: 12px;
-
-            text-align: left;
-
-            border-bottom:
-                1px solid #eee;
-
-        }
-
-
-        th {
-
-            background:
-                #f8fafc;
-
-        }
-
-
-        .paid {
-
-            color: green;
-
-            font-weight: bold;
-
-        }
-
-
-        .unpaid {
-
-            color: red;
-
-            font-weight: bold;
-
-        }
-
-
-        .whatsapp {
-
-            display: inline-block;
-
-            padding: 7px 10px;
-
-            background: #25D366;
-
-            color: white;
-
-            text-decoration: none;
-
-            border-radius: 6px;
-
-            font-size: 13px;
-
-        }
-
-
-        .empty {
-
-            color: #777;
-
-        }
-
-
-        /* MOBILE */
-
-        @media (max-width: 900px) {
-
-            .stats {
-
-                grid-template-columns:
-                    repeat(2, 1fr);
-
-            }
-
-
-            .two-column {
-
-                grid-template-columns:
-                    1fr;
-
-            }
-
-        }
-
-
-        @media (max-width: 600px) {
-
-            .container {
-
-                padding: 15px;
-
-            }
-
-
-            .stats {
-
-                grid-template-columns:
-                    1fr;
-
-            }
-
-
-            .header {
-
-                align-items:
-                    flex-start;
-
-                gap: 15px;
-
-            }
-
-
-            table {
-
-                font-size: 13px;
-
-            }
-
-        }
-
-    </style>
-
+    <link rel = "stylesheet" href = "css/dashboard.css">
 </head>
 
 
@@ -728,7 +388,7 @@ $unpaid_result =
 
             <h1>
 
-                🏋️
+                <img src = "images/gym.png" class="gym-icon" alt="Gym">
 
                 <?php
 
@@ -772,7 +432,8 @@ $unpaid_result =
 
             <div class="stat-title">
 
-                👥 Total Members
+                <img src = "images/group-users.png" class="stat-icon" alt="Gym">
+            Total Members
 
             </div>
 
@@ -791,7 +452,8 @@ $unpaid_result =
 
             <div class="stat-title">
 
-                🟢 Paid This Month
+            <img src = "images/circle.png" class="stat-icon" alt="Gym">
+                Paid This Month
 
             </div>
 
@@ -810,7 +472,8 @@ $unpaid_result =
 
             <div class="stat-title">
 
-                🔴 Unpaid This Month
+            <img src = "images/delete.png" class="stat-icon" alt="Gym">
+                Unpaid This Month
 
             </div>
 
@@ -829,7 +492,8 @@ $unpaid_result =
 
             <div class="stat-title">
 
-                📅 Today's Attendance
+                <img src = "images/calendar.png" class="stat-icon" alt="Gym">
+            Today's Attendance
 
             </div>
 
@@ -854,7 +518,8 @@ $unpaid_result =
 
         <h2>
 
-            💰 This Month's Revenue
+            <img src = "images/money.png" class="revenue-icon" alt="Gym">
+        This Month's Revenue
 
         </h2>
 
@@ -884,7 +549,8 @@ $unpaid_result =
 
         <h2>
 
-            ⚡ Quick Actions
+            <img src = "images/sparkling.png" class="action-icon" alt="Gym">
+        Quick Actions
 
         </h2>
 
@@ -897,7 +563,8 @@ $unpaid_result =
                 class="action"
             >
 
-                👥 Members
+                <img src = "images/group-users.png" class="stat-icon" alt="Gym">
+            Members
 
             </a>
 
@@ -907,7 +574,8 @@ $unpaid_result =
                 class="action"
             >
 
-                ➕ Add Member
+                <img src = "images/plus.png" class="stat-icon" alt="Gym">
+            Add Member
 
             </a>
 
@@ -917,7 +585,8 @@ $unpaid_result =
                 class="action"
             >
 
-                📷 Attendance QR
+                <img src = "images/qr-code.png" class="stat-icon" alt="Gym">
+            Attendance QR
 
             </a>
 
@@ -927,7 +596,8 @@ $unpaid_result =
                 class="action"
             >
 
-                📋 Membership Plans
+                <img src = "images/clipboard.png" class="stat-icon" alt="Gym">
+            Membership Plans
 
             </a>
 
@@ -937,7 +607,8 @@ $unpaid_result =
                 class="action"
             >
 
-                💳 Payments
+                <img src = "images/debit-card.png" class="stat-icon" alt="Gym">
+            Payments
 
             </a>
 
@@ -959,7 +630,8 @@ $unpaid_result =
 
             <h2>
 
-                🔴 Unpaid Members
+                <img src = "images/delete.png" class="stat-icon" alt="Gym">
+            Unpaid Members
 
             </h2>
 
@@ -1067,7 +739,8 @@ $unpaid_result =
 
                 <p class="empty">
 
-                    🎉 Everyone has paid
+                    <img src = "images/confetti.png" class="stat-icon" alt="Gym">
+                Everyone has paid
                     this month!
 
                 </p>
@@ -1086,7 +759,8 @@ $unpaid_result =
 
             <h2>
 
-                📅 Recent Attendance
+                <img src = "images/calendar.png" class="stat-icon" alt="Gym">
+            Recent Attendance
 
             </h2>
 

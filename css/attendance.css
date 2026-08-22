@@ -1,0 +1,182 @@
+/* ==========================================================
+   Attendance Mode Page - Styles
+   ========================================================== */
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, Helvetica, sans-serif;
+    background: #f4f6f8;
+    color: #222;
+}
+
+.header {
+    background: #111827;
+    color: white;
+    padding: 20px 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.gym-name {
+    font-size: 26px;
+    font-weight: bold;
+}
+
+.attendance-mode {
+    font-size: 14px;
+    opacity: 0.8;
+}
+
+.container {
+    max-width: 1200px;
+    margin: auto;
+    padding: 30px;
+}
+
+.main-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+}
+
+.card {
+    background: white;
+    border-radius: 15px;
+    padding: 30px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+}
+
+.qr-section {
+    text-align: center;
+}
+
+.qr-section h1 {
+    font-size: 30px;
+    margin-top: 0;
+}
+
+.qr-image {
+    width: 400px;
+    max-width: 100%;
+    height: auto;
+}
+
+.timer {
+    margin-top: 15px;
+    font-size: 20px;
+}
+
+#timer {
+    font-weight: bold;
+}
+
+.total {
+    margin-top: 25px;
+    font-size: 22px;
+    font-weight: bold;
+}
+
+.attendance-list {
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.attendance-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    border-bottom: 1px solid #eee;
+}
+
+.member-name {
+    font-weight: bold;
+}
+
+.attendance-time {
+    color: #666;
+}
+
+.present {
+    color: green;
+    font-weight: bold;
+}
+
+.exit-button {
+    display: inline-block;
+    margin-top: 30px;
+    padding: 12px 25px;
+    background: #111827;
+    color: white;
+    text-decoration: none;
+    border-radius: 8px;
+}
+
+/* ==========================================================
+   ICONS
+   ========================================================== */
+
+.icon {
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+    vertical-align: middle;
+}
+
+.stat-icon {
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+    vertical-align: middle;
+    margin-right: 8px;
+}
+
+.action {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    width: 180px;
+    min-height: 110px;
+
+    padding: 12px;
+
+    background: #111827;
+    color: white;
+    text-decoration: none;
+    border-radius: 8px;
+
+    text-align: center;
+}
+
+.card h2 img {
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
+    vertical-align: middle;
+    margin-right: 8px;
+}
+
+.empty img {
+    width: 50px;
+    height: 50px;
+    object-fit: contain;
+    vertical-align: middle;
+    margin-right: 8px;
+}
+
+/* MOBILE */
+
+@media (max-width: 800px) {
+
+    .main-grid {
+        grid-template-columns: 1fr;
+    }
+
+}

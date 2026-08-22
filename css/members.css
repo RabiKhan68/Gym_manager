@@ -1,0 +1,273 @@
+/* ==========================================================
+   Members Page - Styles
+   ========================================================== */
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    padding: 30px;
+    font-family: Arial, sans-serif;
+    background: #f4f6f8;
+    color: #222;
+}
+
+.container {
+    max-width: 1300px;
+    margin: auto;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.header h1 {
+    margin: 0;
+}
+
+.actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.button {
+    display: inline-block;
+    padding: 10px 16px;
+    border-radius: 7px;
+    text-decoration: none;
+    background: #111827;
+    color: white;
+}
+
+.button:hover {
+    opacity: 0.9;
+}
+
+.search-box {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.06);
+}
+
+.search-box form {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.search-box input {
+    padding: 10px;
+    width: 300px;
+    max-width: 100%;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+}
+
+.search-box button {
+    padding: 10px 16px;
+    border: none;
+    border-radius: 6px;
+    background: #2563eb;
+    color: white;
+    cursor: pointer;
+}
+
+.clear {
+    display: inline-flex;
+    align-items: center;
+    padding: 10px 15px;
+    text-decoration: none;
+    color: #555;
+}
+
+.table-container {
+    background: white;
+    border-radius: 10px;
+    overflow-x: auto;
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.06);
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 950px;
+}
+
+th,
+td {
+    padding: 14px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+}
+
+th {
+    background: #f8fafc;
+}
+
+tr:hover {
+    background: #fafafa;
+}
+
+.active {
+    color: #16a34a;
+    font-weight: bold;
+}
+
+.inactive {
+    color: #dc2626;
+    font-weight: bold;
+}
+
+.expiry-active {
+    color: #16a34a;
+    font-weight: bold;
+}
+
+.expiry-soon {
+    color: #d97706;
+    font-weight: bold;
+}
+
+.expiry-expired {
+    color: #dc2626;
+    font-weight: bold;
+}
+
+.no-membership {
+    color: #6b7280;
+}
+
+.paid {
+    color: #16a34a;
+    font-weight: bold;
+}
+
+.unpaid {
+    color: #dc2626;
+    font-weight: bold;
+}
+
+.action a {
+    text-decoration: none;
+    margin-right: 8px;
+}
+
+.edit {
+    color: #2563eb;
+}
+
+.details {
+    color: #7c3aed;
+}
+
+.deactivate {
+    color: #dc2626;
+}
+
+.activate {
+    color: #16a34a;
+}
+
+.empty {
+    text-align: center;
+    padding: 40px;
+    color: #777;
+}
+
+/* ==========================================================
+   ICONS
+   ========================================================== */
+
+.icon {
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+    vertical-align: middle;
+}
+
+.gym-icon {
+    width: 70px;
+    height: 70px;
+    object-fit: contain;
+    vertical-align: middle;
+    margin-right: 10px;
+}
+
+.stat-icon {
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+    vertical-align: middle;
+    margin-right: 8px;
+}
+
+.revenue-icon {
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
+    vertical-align: middle;
+    margin-right: 8px;
+}
+
+.action-icon {
+    width: 70px;
+    height: 70px;
+    object-fit: contain;
+    display: block;
+    margin: 0 auto 8px;
+}
+
+.action {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    width: 180px;
+    min-height: 110px;
+
+    padding: 12px;
+
+    background: #111827;
+    color: white;
+    text-decoration: none;
+    border-radius: 8px;
+
+    text-align: center;
+}
+
+.card h2 img {
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
+    vertical-align: middle;
+    margin-right: 8px;
+}
+
+.empty img {
+    width: 50px;
+    height: 50px;
+    object-fit: contain;
+    vertical-align: middle;
+    margin-right: 8px;
+}
+
+/* MOBILE */
+
+@media (max-width: 600px) {
+
+    body {
+        padding: 15px;
+    }
+
+}

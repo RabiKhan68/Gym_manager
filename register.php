@@ -13,7 +13,7 @@
     <title>
         Create Gym Owner Account
     </title>
-
+    <link rel = "stylesheet" href = "css/register.css">
 </head>
 
 
