@@ -408,6 +408,15 @@ $unpaid_result =
 
         </div>
 
+        <a
+            href="manual.html"
+            class="logout"
+        >
+
+            Documentation
+
+        </a>
+
 
         <a
             href="logout.php"
