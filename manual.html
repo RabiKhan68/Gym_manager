@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GymManager — User Guide</title>
+
+<style>
+
+    * {
+        box-sizing: border-box;
+    }
+
+    html {
+        scroll-behavior: smooth;
+    }
+
+    body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        background: #f4f6f8;
+        color: #222;
+        display: flex;
+        min-height: 100vh;
+    }
+
+    /* ============================
+       SIDEBAR
+       ============================ */
+
+    .sidebar {
+        width: 260px;
+        flex-shrink: 0;
+        background: #111827;
+        color: #d1d5db;
+        padding: 30px 0;
+        position: sticky;
+        top: 0;
+        height: 100vh;
+        overflow-y: auto;
+    }
+
+    .sidebar .brand {
+        padding: 0 25px 20px;
+        border-bottom: 1px solid #1f2937;
+        margin-bottom: 15px;
+    }
+
+    .sidebar .brand h1 {
+        color: white;
+        font-size: 20px;
+        margin: 0;
+    }
+
+    .sidebar .brand p {
+        margin: 6px 0 0;
+        font-size: 13px;
+        color: #9ca3af;
+    }
+
+    .sidebar nav {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .sidebar nav a {
+        display: block;
+        padding: 10px 25px;
+        color: #d1d5db;
+        text-decoration: none;
+        font-size: 14px;
+        border-left: 3px solid transparent;
+    }
+
+    .sidebar nav a:hover {
+        background: #1f2937;
+        color: white;
+    }
+
+    .sidebar nav .group-label {
+        padding: 18px 25px 6px;
+        font-size: 11px;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: #6b7280;
+    }
+
+    /* ============================
+       MAIN CONTENT
+       ============================ */
+
+    .content {
+        flex: 1;
+        max-width: 900px;
+        padding: 50px 60px 100px;
+    }
+
+    .content > .intro h1 {
+        margin: 0 0 10px;
+        font-size: 32px;
+        color: #111827;
+    }
+
+    .content > .intro p {
+        color: #666;
+        font-size: 16px;
+        max-width: 600px;
+        line-height: 1.6;
+    }
+
+    section {
+        margin-top: 55px;
+        scroll-margin-top: 30px;
+    }
+
+    section h2 {
+        font-size: 24px;
+        color: #111827;
+        margin-bottom: 6px;
+        padding-bottom: 12px;
+        border-bottom: 2px solid #e5e7eb;
+    }
+
+    section > .section-desc {
+        color: #666;
+        margin: 10px 0 22px;
+        line-height: 1.6;
+    }
+
+    .card {
+        background: white;
+        border-radius: 12px;
+        padding: 22px 25px;
+        box-shadow: 0 3px 12px rgba(0,0,0,0.06);
+        margin-bottom: 18px;
+    }
+
+    .card h3 {
+        margin: 0 0 12px;
+        font-size: 16px;
+        color: #111827;
+    }
+
+    .card ol,
+    .card ul {
+        margin: 0;
+        padding-left: 20px;
+        color: #333;
+        line-height: 1.8;
+    }
+
+    .card p {
+        color: #333;
+        line-height: 1.7;
+        margin: 0;
+    }
+
+    .tag {
+        display: inline-block;
+        font-size: 12px;
+        font-weight: bold;
+        padding: 3px 9px;
+        border-radius: 20px;
+        margin-left: 8px;
+        vertical-align: middle;
+    }
+
+    .tag.owner {
+        background: #eff6ff;
+        color: #1d4ed8;
+    }
+
+    .tip {
+        margin-top: 14px;
+        padding: 12px 14px;
+        background: #f8fafc;
+        border-left: 3px solid #2563eb;
+        border-radius: 6px;
+        font-size: 14px;
+        color: #444;
+    }
+
+    .warn {
+        margin-top: 14px;
+        padding: 12px 14px;
+        background: #fff7ed;
+        border-left: 3px solid #d97706;
+        border-radius: 6px;
+        font-size: 14px;
+        color: #7c2d12;
+    }
+
+    .grid-two {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 18px;
+    }
+
+    code {
+        background: #f1f5f9;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 13px;
+        color: #1e3a8a;
+    }
+
+    footer {
+        margin-top: 60px;
+        padding-top: 20px;
+        border-top: 1px solid #e5e7eb;
+        color: #999;
+        font-size: 13px;
+    }
+
+    /* ============================
+       MOBILE
+       ============================ */
+
+    @media (max-width: 850px) {
+
+        body {
+            flex-direction: column;
+        }
+
+        .sidebar {
+            width: 100%;
+            height: auto;
+            position: relative;
+        }
+
+        .content {
+            padding: 35px 20px 70px;
+        }
+
+        .grid-two {
+            grid-template-columns: 1fr;
+        }
+
+    }
+
+</style>
+
+</head>
+
+
+<body>
+
+
+    <!-- SIDEBAR -->
+
+    <div class="sidebar">
+
+        <div class="brand">
+            <h1>GymManager</h1>
+            <p>User Guide</p>
+        </div>
+
+        <nav>
+
+            <div class="group-label">Getting Started</div>
+            <a href="#account">Creating an Account</a>
+            <a href="#gym-setup">Setting Up Your Gym</a>
+            <a href="#dashboard">Dashboard Overview</a>
+
+            <div class="group-label">Members</div>
+            <a href="#add-member">Adding a Member</a>
+            <a href="#edit-member">Editing a Member</a>
+            <a href="#member-details">Member Details</a>
+            <a href="#member-status">Activating / Deactivating</a>
+
+            <div class="group-label">Memberships</div>
+            <a href="#plans">Membership Plans</a>
+            <a href="#assign">Assigning a Membership</a>
+
+            <div class="group-label">Attendance</div>
+            <a href="#attendance">Attendance QR Mode</a>
+
+            <div class="group-label">Payments</div>
+            <a href="#record-payment">Recording a Payment</a>
+            <a href="#payment-status">Payment Status</a>
+            <a href="#receipts">Receipts &amp; WhatsApp</a>
+
+        </nav>
+
+    </div>
+
+
+
+    <!-- MAIN CONTENT -->
+
+    <div class="content">
+
+
+        <div class="intro">
+            <h1>GymManager User Guide</h1>
+            <p>
+                A walkthrough of every screen in GymManager — from
+                creating your account to recording a member's payment.
+                Use the menu on the left to jump to any section.
+            </p>
+        </div>
+
+
+
+        <!-- ACCOUNT -->
+
+        <section id="account">
+
+            <h2>Creating an Account</h2>
+            <p class="section-desc">
+                Every gym is managed by an owner account. You'll need
+                one before you can create a gym or add members.
+            </p>
+
+            <div class="card">
+                <h3>To register</h3>
+                <ol>
+                    <li>Open the <strong>Register</strong> page.</li>
+                    <li>Fill in your full name, email, phone/WhatsApp number, and a password.</li>
+                    <li>Click <strong>Create Account</strong>.</li>
+                    <li>You'll be taken to the login page.</li>
+                </ol>
+                <div class="tip">
+                    Use a real WhatsApp number — it's shown to members as your
+                    gym's contact number on receipts and payment messages.
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>To log in</h3>
+                <ol>
+                    <li>Open the <strong>Login</strong> page.</li>
+                    <li>Enter your email and password.</li>
+                    <li>Click <strong>Login</strong>.</li>
+                </ol>
+            </div>
+
+        </section>
+
+
+
+        <!-- GYM SETUP -->
+
+        <section id="gym-setup">
+
+            <h2>Setting Up Your Gym</h2>
+            <p class="section-desc">
+                The first time you log in, you'll be asked to create your
+                gym profile. This only happens once.
+            </p>
+
+            <div class="card">
+                <ol>
+                    <li>Enter your <strong>Gym Name</strong>.</li>
+                    <li>Enter your gym's <strong>address</strong> (optional).</li>
+                    <li>Your account's phone number is shown automatically as the gym's contact number.</li>
+                    <li>Click <strong>Create Gym</strong> to continue to your dashboard.</li>
+                </ol>
+            </div>
+
+        </section>
+
+
+
+        <!-- DASHBOARD -->
+
+        <section id="dashboard">
+
+            <h2>Dashboard Overview</h2>
+            <p class="section-desc">
+                The dashboard is your home screen — a snapshot of your
+                gym's current status.
+            </p>
+
+            <div class="grid-two">
+
+                <div class="card">
+                    <h3>What you'll see</h3>
+                    <ul>
+                        <li>Total members</li>
+                        <li>Members paid this month</li>
+                        <li>Members unpaid this month</li>
+                        <li>Today's attendance count</li>
+                        <li>This month's revenue</li>
+                    </ul>
+                </div>
+
+                <div class="card">
+                    <h3>Quick Actions</h3>
+                    <ul>
+                        <li>Members</li>
+                        <li>Add Member</li>
+                        <li>Attendance QR</li>
+                        <li>Membership Plans</li>
+                        <li>Payments</li>
+                    </ul>
+                </div>
+
+            </div>
+
+            <div class="card">
+                <h3>Recent activity</h3>
+                <p>
+                    The dashboard also lists members who haven't paid yet
+                    this month, and the most recent attendance check-ins,
+                    so you can act on both at a glance.
+                </p>
+            </div>
+
+        </section>
+
+
+
+        <!-- ADD MEMBER -->
+
+        <section id="add-member">
+
+            <h2>Adding a Member</h2>
+            <p class="section-desc">
+                Add a new member's basic details. You'll assign their
+                membership plan separately.
+            </p>
+
+            <div class="card">
+                <ol>
+                    <li>Go to <strong>Members</strong> → <strong>Add Member</strong>.</li>
+                    <li>Enter the member's full name (required).</li>
+                    <li>Enter their phone number — used for WhatsApp reminders and receipts.</li>
+                    <li>Enter their email (optional).</li>
+                    <li>Confirm or change the joining date.</li>
+                    <li>Click <strong>Add Member</strong>.</li>
+                </ol>
+                <div class="tip">
+                    After adding a member, go to <strong>Assign Membership</strong>
+                    to put them on a plan — new members don't have one automatically.
+                </div>
+            </div>
+
+        </section>
+
+
+
+        <!-- EDIT MEMBER -->
+
+        <section id="edit-member">
+
+            <h2>Editing a Member</h2>
+
+            <div class="card">
+                <ol>
+                    <li>Go to <strong>Members</strong> and find the member.</li>
+                    <li>Click <strong>Edit</strong>.</li>
+                    <li>Update their name, phone, email, or joining date.</li>
+                    <li>Click <strong>Save Changes</strong>.</li>
+                </ol>
+            </div>
+
+        </section>
+
+
+
+        <!-- MEMBER DETAILS -->
+
+        <section id="member-details">
+
+            <h2>Member Details</h2>
+            <p class="section-desc">
+                A full profile for one member — their membership, payment
+                history, and attendance record all in one place.
+            </p>
+
+            <div class="card">
+                <h3>What's shown</h3>
+                <ul>
+                    <li>Personal information</li>
+                    <li>Attendance this month</li>
+                    <li>Current membership plan and expiry</li>
+                    <li>This month's payment status</li>
+                    <li>Full payment history, with receipt and WhatsApp buttons</li>
+                    <li>Full attendance history</li>
+                </ul>
+                <p>Open it by clicking <strong>Details</strong> next to any member on the Members page.</p>
+            </div>
+
+        </section>
+
+
+
+        <!-- ACTIVATE/DEACTIVATE -->
+
+        <section id="member-status">
+
+            <h2>Activating / Deactivating a Member</h2>
+            <p class="section-desc">
+                Deactivating a member hides them from active lists and
+                stops them from being charged, without deleting their
+                history.
+            </p>
+
+            <div class="card">
+                <ol>
+                    <li>Go to <strong>Members</strong>.</li>
+                    <li>Find the member and click <strong>Deactivate</strong> (or <strong>Activate</strong>, if they're currently inactive).</li>
+                    <li>Confirm the action when prompted.</li>
+                </ol>
+            </div>
+
+        </section>
+
+
+
+        <!-- PLANS -->
+
+        <section id="plans">
+
+            <h2>Membership Plans</h2>
+            <p class="section-desc">
+                Plans define what you charge and for how long. Create at
+                least one before assigning memberships to members.
+            </p>
+
+            <div class="card">
+                <h3>Creating a plan</h3>
+                <ol>
+                    <li>Go to <strong>Membership Plans</strong> → <strong>Create New Plan</strong>.</li>
+                    <li>Enter a plan name (e.g. Basic, Premium, Gold).</li>
+                    <li>Enter the price.</li>
+                    <li>Enter the duration in months.</li>
+                    <li>Add a description (optional).</li>
+                    <li>Click <strong>Create Membership Plan</strong>.</li>
+                </ol>
+            </div>
+
+            <div class="card">
+                <h3>Editing or deleting a plan</h3>
+                <p>
+                    From the Membership Plans page, click <strong>Edit</strong>
+                    to change a plan's details.
+                </p>
+                <div class="warn">
+                    A plan can only be deleted if no members are currently
+                    assigned to it. If members are using it, the delete
+                    option is disabled.
+                </div>
+            </div>
+
+        </section>
+
+
+
+        <!-- ASSIGN -->
+
+        <section id="assign">
+
+            <h2>Assigning a Membership</h2>
+            <p class="section-desc">
+                Puts a member on a plan and sets their start date — the
+                expiry date is calculated automatically.
+            </p>
+
+            <div class="card">
+                <ol>
+                    <li>Go to <strong>Assign Membership</strong> (from the dashboard or Members page).</li>
+                    <li>Select the member.</li>
+                    <li>Select the membership plan — price and duration appear automatically.</li>
+                    <li>Confirm the start date.</li>
+                    <li>Click <strong>Assign Membership</strong>.</li>
+                </ol>
+            </div>
+
+        </section>
+
+
+
+        <!-- ATTENDANCE -->
+
+        <section id="attendance">
+
+            <h2>Attendance QR Mode</h2>
+            <p class="section-desc">
+                Turns a screen at your gym's entrance into a self-service
+                check-in point. Members scan a QR code with their phone
+                to mark themselves present.
+            </p>
+
+            <div class="card">
+                <h3>Using it</h3>
+                <ol>
+                    <li>Open <strong>Attendance QR</strong> from the dashboard.</li>
+                    <li>Display the QR code on a screen or tablet at your entrance.</li>
+                    <li>Members scan it with their phone camera to check in.</li>
+                    <li>Today's check-ins update automatically and appear in the list on the right.</li>
+                </ol>
+                <div class="tip">
+                    The QR code refreshes automatically every 60 seconds for
+                    security — no action needed on your part.
+                </div>
+            </div>
+
+        </section>
+
+
+
+        <!-- RECORD PAYMENT -->
+
+        <section id="record-payment">
+
+            <h2>Recording a Payment</h2>
+            <p class="section-desc">
+                There are two ways to record a payment — from the general
+                Payments page, or directly from a member's profile.
+            </p>
+
+            <div class="card">
+                <h3>From the Payments page</h3>
+                <ol>
+                    <li>Go to <strong>Payments</strong> → <strong>Record Payment</strong>.</li>
+                    <li>Select the member/membership from the list.</li>
+                    <li>Select the month the payment is for.</li>
+                    <li>Choose <strong>Cash</strong> or <strong>Online</strong> as the payment method.</li>
+                    <li>Click <strong>Record Payment</strong>.</li>
+                </ol>
+            </div>
+
+            <div class="card">
+                <h3>From a member's profile</h3>
+                <p>
+                    Click <strong>Record Payment</strong> next to an unpaid
+                    member — their name, plan, and monthly fee are filled in
+                    automatically. Just confirm the amount and method.
+                </p>
+                <div class="warn">
+                    A member can't be charged twice for the same month —
+                    if they've already paid, the option won't appear.
+                </div>
+            </div>
+
+        </section>
+
+
+
+        <!-- PAYMENT STATUS -->
+
+        <section id="payment-status">
+
+            <h2>Payment Status</h2>
+            <p class="section-desc">
+                A month-at-a-glance view of who has paid, who hasn't, and
+                whose membership is expiring soon.
+            </p>
+
+            <div class="card">
+                <p>
+                    Open <strong>Payment Status</strong> to see totals for
+                    paid, unpaid, expiring, and expired memberships, plus a
+                    full table you can scan member by member.
+                </p>
+            </div>
+
+        </section>
+
+
+
+        <!-- RECEIPTS -->
+
+        <section id="receipts">
+
+            <h2>Receipts &amp; WhatsApp</h2>
+            <p class="section-desc">
+                Every paid payment gets a printable receipt that can also
+                be sent straight to the member on WhatsApp.
+            </p>
+
+            <div class="card">
+                <ol>
+                    <li>Find the payment on a member's <strong>Details</strong> page or the <strong>Payments</strong> table.</li>
+                    <li>Click <strong>Receipt</strong> to view it, or <strong>Print Receipt</strong> to print/save as PDF.</li>
+                    <li>Click <strong>WhatsApp Receipt</strong> to open WhatsApp with the receipt details pre-filled — just hit send.</li>
+                </ol>
+                <div class="tip">
+                    The WhatsApp button only appears if the member has a
+                    phone number saved on their profile.
+                </div>
+            </div>
+
+        </section>
+
+
+        <footer>
+            GymManager — User Guide
+        </footer>
+
+    </div>
+
+
+</body>
+
+</html>
