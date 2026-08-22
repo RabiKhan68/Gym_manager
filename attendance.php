@@ -126,15 +126,44 @@ $stmt->execute();
 |
 */
 
-$server_ip = "192.168.0.105";
+// $server_ip = "192.168.0.105";
 
+
+// $scan_url =
+//     "http://" .
+//     $server_ip .
+//     "/fitness-management/scan.php?token=" .
+//     urlencode($token);
+
+/*
+|--------------------------------------------------------------------------
+| Generate scan URL
+|--------------------------------------------------------------------------
+|
+| Use the current website URL automatically.
+|
+*/
+
+$protocol = (
+    (!empty($_SERVER["HTTPS"]) && $_SERVER["HTTPS"] !== "off")
+    || ($_SERVER["SERVER_PORT"] ?? "") == 443
+)
+    ? "https://"
+    : "http://";
+
+$host = $_SERVER["HTTP_HOST"];
+
+$base_path = rtrim(
+    dirname($_SERVER["SCRIPT_NAME"]),
+    "/\\"
+);
 
 $scan_url =
-    "http://" .
-    $server_ip .
-    "/fitness-management/scan.php?token=" .
+    $protocol .
+    $host .
+    $base_path .
+    "/scan.php?token=" .
     urlencode($token);
-
 
 /*
 |--------------------------------------------------------------------------
