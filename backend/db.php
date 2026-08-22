@@ -3,7 +3,7 @@
 $host = "localhost";
 $dbname = "fitness_management";
 $username = "root";
-$password = "srkthepro145@";
+$password = "";
 
 $conn = new mysqli(
     $host,
