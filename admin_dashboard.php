@@ -556,6 +556,10 @@ $owners_result =
         Manage Gym Owners
     </a>
 
+    <a href="admin_payments.php">
+    Payments
+    </a>
+
 </div>
 
 
