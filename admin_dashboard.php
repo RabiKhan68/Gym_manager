@@ -540,6 +540,24 @@ $owners_result =
 
     </div>
 
+    <div style="margin-bottom: 25px;">
+
+    <a
+        href="admin_owners.php"
+        style="
+            display:inline-block;
+            padding:12px 20px;
+            background:#111827;
+            color:white;
+            text-decoration:none;
+            border-radius:8px;
+        "
+    >
+        Manage Gym Owners
+    </a>
+
+</div>
+
 
     <!-- GYM OWNERS -->
 
