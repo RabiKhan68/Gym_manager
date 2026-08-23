@@ -469,6 +469,90 @@ while ($row = $result->fetch_assoc()) {
 
         }
 
+        .edit-button {
+
+    display: inline-block;
+
+    padding: 8px 12px;
+
+    background: #2563eb;
+
+    color: white;
+
+    text-decoration: none;
+
+    border-radius: 6px;
+
+    font-size: 13px;
+
+    white-space: nowrap;
+
+    margin-left: 4px;
+
+}
+
+
+.edit-button:hover {
+
+    opacity: 0.85;
+
+}
+
+
+.delete-button {
+
+    display: inline-block;
+
+    padding: 8px 12px;
+
+    background: #dc2626;
+
+    color: white;
+
+    text-decoration: none;
+
+    border-radius: 6px;
+
+    font-size: 13px;
+
+    white-space: nowrap;
+
+    margin-left: 4px;
+
+}
+
+
+.delete-button:hover {
+
+    opacity: 0.85;
+
+}
+
+.create-button {
+
+    display: inline-block;
+
+    padding: 10px 18px;
+
+    background: #16a34a;
+
+    color: white;
+
+    text-decoration: none;
+
+    border-radius: 8px;
+
+    font-weight: bold;
+
+}
+
+
+.create-button:hover {
+
+    opacity: 0.85;
+
+}
+
 
         /* EMPTY */
 
@@ -554,14 +638,23 @@ while ($row = $result->fetch_assoc()) {
         </div>
 
 
-        <a
-            href="admin_dashboard.php"
-            class="back"
-        >
+        <div style="display: flex; gap: 10px;">
 
-            ← Dashboard
+    <a
+        href="admin_subscription_create.php"
+        class="create-button"
+    >
+        + Create Subscription
+    </a>
 
-        </a>
+    <a
+        href="admin_dashboard.php"
+        class="back"
+    >
+        ← Dashboard
+    </a>
+
+</div>
 
     </div>
 
@@ -956,18 +1049,31 @@ while ($row = $result->fetch_assoc()) {
 
                         <!-- ACTION -->
 
-                        <td>
+<td>
 
-                            <a
-                                href="admin_owner_details.php?id=<?php echo (int)$subscription["subscription_id"]; ?>"
-                                class="view-button"
-                            >
+    <a
+        href="admin_subscription_details.php?id=<?php echo (int)$subscription["subscription_id"]; ?>"
+        class="view-button"
+    >
+        View
+    </a>
 
-                                View Subscription
+    <a
+        href="admin_subscription_edit.php?id=<?php echo (int)$subscription["subscription_id"]; ?>"
+        class="edit-button"
+    >
+        Edit
+    </a>
 
-                            </a>
+    <a
+        href="admin_subscription_delete.php?id=<?php echo (int)$subscription["subscription_id"]; ?>"
+        class="delete-button"
+        onclick="return confirm('Are you sure you want to delete this subscription?');"
+    >
+        Delete
+    </a>
 
-                        </td>
+</td>
 
 
                     </tr>

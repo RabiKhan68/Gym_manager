@@ -560,6 +560,10 @@ $owners_result =
     Payments
     </a>
 
+    <a href="admin_subscriptions.php">
+    Subscriptions
+    </a>
+
 </div>
 
 
