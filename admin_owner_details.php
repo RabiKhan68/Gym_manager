@@ -242,8 +242,7 @@ if ($gym_id) {
                 member_id,
                 name,
                 phone,
-                status,
-                created_at
+                status
 
             FROM members
 
