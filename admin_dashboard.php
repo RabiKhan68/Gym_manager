@@ -18,6 +18,7 @@ if (!isset($_SESSION["admin_id"])) {
 
 }
 
+
 $admin_name = $_SESSION["admin_name"] ?? "Administrator";
 
 
@@ -32,8 +33,15 @@ $sql = "SELECT COUNT(*) AS total
 
 $result = $conn->query($sql);
 
-$total_owners =
-    $result->fetch_assoc()["total"];
+$total_owners = 0;
+
+if ($result) {
+
+    $row = $result->fetch_assoc();
+
+    $total_owners = (int) $row["total"];
+
+}
 
 
 /*
@@ -47,8 +55,15 @@ $sql = "SELECT COUNT(*) AS total
 
 $result = $conn->query($sql);
 
-$total_gyms =
-    $result->fetch_assoc()["total"];
+$total_gyms = 0;
+
+if ($result) {
+
+    $row = $result->fetch_assoc();
+
+    $total_gyms = (int) $row["total"];
+
+}
 
 
 /*
@@ -62,8 +77,15 @@ $sql = "SELECT COUNT(*) AS total
 
 $result = $conn->query($sql);
 
-$total_members =
-    $result->fetch_assoc()["total"];
+$total_members = 0;
+
+if ($result) {
+
+    $row = $result->fetch_assoc();
+
+    $total_members = (int) $row["total"];
+
+}
 
 
 /*
@@ -77,8 +99,82 @@ $sql = "SELECT COUNT(*) AS total
 
 $result = $conn->query($sql);
 
-$total_plans =
-    $result->fetch_assoc()["total"];
+$total_plans = 0;
+
+if ($result) {
+
+    $row = $result->fetch_assoc();
+
+    $total_plans = (int) $row["total"];
+
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| Total gym-owner subscriptions
+|--------------------------------------------------------------------------
+*/
+
+$sql = "SELECT COUNT(*) AS total
+        FROM gym_owner_subscriptions";
+
+$result = $conn->query($sql);
+
+$total_subscriptions = 0;
+
+if ($result) {
+
+    $row = $result->fetch_assoc();
+
+    $total_subscriptions = (int) $row["total"];
+
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| Active gym-owner subscriptions
+|--------------------------------------------------------------------------
+*/
+
+$sql = "SELECT COUNT(*) AS total
+        FROM gym_owner_subscriptions
+        WHERE status = 'active'";
+
+$result = $conn->query($sql);
+
+$active_subscriptions = 0;
+
+if ($result) {
+
+    $row = $result->fetch_assoc();
+
+    $active_subscriptions = (int) $row["total"];
+
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| Total subscription plans
+|--------------------------------------------------------------------------
+*/
+
+$sql = "SELECT COUNT(*) AS total
+        FROM subscription_plans";
+
+$result = $conn->query($sql);
+
+$total_subscription_plans = 0;
+
+if ($result) {
+
+    $row = $result->fetch_assoc();
+
+    $total_subscription_plans = (int) $row["total"];
+
+}
 
 
 /*
@@ -95,8 +191,7 @@ $sql = "SELECT
         ORDER BY owner_id DESC
         LIMIT 10";
 
-$owners_result =
-    $conn->query($sql);
+$owners_result = $conn->query($sql);
 
 ?>
 
@@ -153,8 +248,7 @@ $owners_result =
 
             display: flex;
 
-            justify-content:
-                space-between;
+            justify-content: space-between;
 
             align-items: center;
 
@@ -209,7 +303,7 @@ $owners_result =
 
         .container {
 
-            max-width: 1200px;
+            max-width: 1300px;
 
             margin: auto;
 
@@ -292,6 +386,120 @@ $owners_result =
         }
 
 
+        /* MANAGEMENT */
+
+        .management {
+
+            display: grid;
+
+            grid-template-columns:
+                repeat(3, 1fr);
+
+            gap: 20px;
+
+            margin-bottom: 30px;
+
+        }
+
+
+        .management-card {
+
+            background: white;
+
+            padding: 25px;
+
+            border-radius: 12px;
+
+            box-shadow:
+                0 3px 12px
+                rgba(0,0,0,0.06);
+
+        }
+
+
+        .management-card h3 {
+
+            margin-top: 0;
+
+            margin-bottom: 8px;
+
+        }
+
+
+        .management-card p {
+
+            color: #6b7280;
+
+            font-size: 14px;
+
+            line-height: 1.5;
+
+            min-height: 42px;
+
+        }
+
+
+        .button {
+
+            display: inline-block;
+
+            padding: 10px 16px;
+
+            color: white;
+
+            text-decoration: none;
+
+            border-radius: 7px;
+
+            font-weight: bold;
+
+            margin-top: 8px;
+
+        }
+
+
+        .button:hover {
+
+            opacity: 0.85;
+
+        }
+
+
+        .button-dark {
+
+            background: #111827;
+
+        }
+
+
+        .button-blue {
+
+            background: #2563eb;
+
+        }
+
+
+        .button-green {
+
+            background: #16a34a;
+
+        }
+
+
+        .button-purple {
+
+            background: #7c3aed;
+
+        }
+
+
+        .button-orange {
+
+            background: #ea580c;
+
+        }
+
+
         /* CARD */
 
         .card {
@@ -322,8 +530,7 @@ $owners_result =
 
             width: 100%;
 
-            border-collapse:
-                collapse;
+            border-collapse: collapse;
 
         }
 
@@ -357,9 +564,16 @@ $owners_result =
 
         /* RESPONSIVE */
 
-        @media (max-width: 900px) {
+        @media (max-width: 1000px) {
 
             .stats {
+
+                grid-template-columns:
+                    repeat(2, 1fr);
+
+            }
+
+            .management {
 
                 grid-template-columns:
                     repeat(2, 1fr);
@@ -385,7 +599,26 @@ $owners_result =
             }
 
 
+            .header {
+
+                flex-direction: column;
+
+                align-items: flex-start;
+
+                gap: 15px;
+
+            }
+
+
             .stats {
+
+                grid-template-columns:
+                    1fr;
+
+            }
+
+
+            .management {
 
                 grid-template-columns:
                     1fr;
@@ -408,6 +641,12 @@ $owners_result =
 
 <body>
 
+
+<!--
+|--------------------------------------------------------------------------
+| HEADER
+|--------------------------------------------------------------------------
+-->
 
 <header class="header">
 
@@ -447,10 +686,15 @@ $owners_result =
 </header>
 
 
+
 <div class="container">
 
 
-    <!-- WELCOME -->
+    <!--
+    |--------------------------------------------------------------------------
+    | WELCOME
+    |--------------------------------------------------------------------------
+    -->
 
     <div class="welcome">
 
@@ -465,7 +709,12 @@ $owners_result =
     </div>
 
 
-    <!-- STATISTICS -->
+
+    <!--
+    |--------------------------------------------------------------------------
+    | STATISTICS
+    |--------------------------------------------------------------------------
+    -->
 
     <div class="stats">
 
@@ -487,6 +736,7 @@ $owners_result =
         </div>
 
 
+
         <div class="stat-card">
 
             <div class="stat-title">
@@ -504,6 +754,7 @@ $owners_result =
         </div>
 
 
+
         <div class="stat-card">
 
             <div class="stat-title">
@@ -519,6 +770,7 @@ $owners_result =
             </div>
 
         </div>
+
 
 
         <div class="stat-card">
@@ -540,34 +792,196 @@ $owners_result =
 
     </div>
 
-    <div style="margin-bottom: 25px;">
-
-    <a
-        href="admin_owners.php"
-        style="
-            display:inline-block;
-            padding:12px 20px;
-            background:#111827;
-            color:white;
-            text-decoration:none;
-            border-radius:8px;
-        "
-    >
-        Manage Gym Owners
-    </a>
-
-    <a href="admin_payments.php">
-    Payments
-    </a>
-
-    <a href="admin_subscriptions.php">
-    Subscriptions
-    </a>
-
-</div>
 
 
-    <!-- GYM OWNERS -->
+    <!--
+    |--------------------------------------------------------------------------
+    | ADMIN MANAGEMENT
+    |--------------------------------------------------------------------------
+    -->
+
+    <div class="management">
+
+
+        <!-- GYM OWNERS -->
+
+        <div class="management-card">
+
+            <h3>
+                Gym Owners
+            </h3>
+
+            <p>
+                View and manage all gym-owner accounts and their details.
+            </p>
+
+            <a
+                href="admin_owners.php"
+                class="button button-dark"
+            >
+
+                Manage Owners
+
+            </a>
+
+        </div>
+
+
+
+        <!-- SUBSCRIPTIONS -->
+
+        <div class="management-card">
+
+            <h3>
+                Gym Owner Subscriptions
+            </h3>
+
+            <p>
+
+                <?php
+                echo $total_subscriptions;
+                ?>
+
+                subscriptions,
+
+                <?php
+                echo $active_subscriptions;
+                ?>
+
+                currently active.
+
+            </p>
+
+            <a
+                href="admin_subscriptions.php"
+                class="button button-blue"
+            >
+
+                Manage Subscriptions
+
+            </a>
+
+        </div>
+
+
+
+        <!-- SUBSCRIPTION PLANS -->
+
+        <div class="management-card">
+
+            <h3>
+                Subscription Plans
+            </h3>
+
+            <p>
+
+                <?php
+                echo $total_subscription_plans;
+                ?>
+
+                plans available.
+
+                Create, edit, or delete the plans offered to gym owners.
+
+            </p>
+
+            <a
+                href="admin_subscription_plans.php"
+                class="button button-green"
+            >
+
+                Manage Plans
+
+            </a>
+
+        </div>
+
+
+
+        <!-- PAYMENTS -->
+
+        <div class="management-card">
+
+            <h3>
+                Subscription Payments
+            </h3>
+
+            <p>
+                Monitor payments made by gym owners, including paid,
+                pending, and failed payments.
+            </p>
+
+            <a
+                href="admin_subscription_payments.php"
+                class="button button-purple"
+            >
+
+                View Payments
+
+            </a>
+
+        </div>
+
+
+
+        <!-- CREATE SUBSCRIPTION -->
+
+        <div class="management-card">
+
+            <h3>
+                Create Subscription
+            </h3>
+
+            <p>
+                Manually assign a subscription plan to a gym owner.
+            </p>
+
+            <a
+                href="admin_subscription_create.php"
+                class="button button-orange"
+            >
+
+                + Create Subscription
+
+            </a>
+
+        </div>
+
+
+
+        <!-- CREATE PLAN -->
+
+        <div class="management-card">
+
+            <h3>
+                Create Subscription Plan
+            </h3>
+
+            <p>
+                Add a new package with its price and member limit.
+            </p>
+
+            <a
+                href="admin_subscription_plan_create.php"
+                class="button button-green"
+            >
+
+                + Create Plan
+
+            </a>
+
+        </div>
+
+
+    </div>
+
+
+
+    <!--
+    |--------------------------------------------------------------------------
+    | RECENT GYM OWNERS
+    |--------------------------------------------------------------------------
+    -->
 
     <div class="card">
 
@@ -619,8 +1033,24 @@ $owners_result =
 
                                 <?php
 
+                                echo (int)
+                                    $owner[
+                                        "owner_id"
+                                    ];
+
+                                ?>
+
+                            </td>
+
+
+                            <td>
+
+                                <?php
+
                                 echo htmlspecialchars(
-                                    $owner["owner_id"]
+                                    $owner[
+                                        "name"
+                                    ]
                                 );
 
                                 ?>
@@ -633,20 +1063,9 @@ $owners_result =
                                 <?php
 
                                 echo htmlspecialchars(
-                                    $owner["name"]
-                                );
-
-                                ?>
-
-                            </td>
-
-
-                            <td>
-
-                                <?php
-
-                                echo htmlspecialchars(
-                                    $owner["email"]
+                                    $owner[
+                                        "email"
+                                    ]
                                 );
 
                                 ?>
