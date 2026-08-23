@@ -38,6 +38,7 @@ $sql = "SELECT
             o.email AS owner_email,
             o.phone AS owner_phone,
 
+            sp.subscription_plan_id,
             sp.plan_name,
             sp.price,
             sp.member_limit,
@@ -84,7 +85,6 @@ $active_subscriptions = 0;
 $expired_subscriptions = 0;
 $cancelled_subscriptions = 0;
 
-
 $subscriptions = [];
 
 
@@ -93,6 +93,7 @@ while ($row = $result->fetch_assoc()) {
     $subscriptions[] = $row;
 
     $total_subscriptions++;
+
 
     if ($row["status"] === "active") {
 
@@ -167,7 +168,9 @@ while ($row = $result->fetch_assoc()) {
         }
 
 
-        /* HEADER */
+        /*--------------------------------------------------------------
+        HEADER
+        --------------------------------------------------------------*/
 
         .header {
 
@@ -179,6 +182,8 @@ while ($row = $result->fetch_assoc()) {
             align-items: center;
 
             margin-bottom: 25px;
+
+            gap: 20px;
 
         }
 
@@ -197,6 +202,19 @@ while ($row = $result->fetch_assoc()) {
             margin: 5px 0 0;
 
             color: #6b7280;
+
+        }
+
+
+        .header-actions {
+
+            display: flex;
+
+            align-items: center;
+
+            gap: 10px;
+
+            flex-wrap: wrap;
 
         }
 
@@ -225,7 +243,35 @@ while ($row = $result->fetch_assoc()) {
         }
 
 
-        /* SUMMARY */
+        .create-button {
+
+            display: inline-block;
+
+            padding: 10px 18px;
+
+            background: #16a34a;
+
+            color: white;
+
+            text-decoration: none;
+
+            border-radius: 8px;
+
+            font-weight: bold;
+
+        }
+
+
+        .create-button:hover {
+
+            opacity: 0.85;
+
+        }
+
+
+        /*--------------------------------------------------------------
+        SUMMARY
+        --------------------------------------------------------------*/
 
         .summary {
 
@@ -251,7 +297,7 @@ while ($row = $result->fetch_assoc()) {
 
             box-shadow:
                 0 3px 12px
-                rgba(0,0,0,0.06);
+                rgba(0, 0, 0, 0.06);
 
         }
 
@@ -276,7 +322,9 @@ while ($row = $result->fetch_assoc()) {
         }
 
 
-        /* TABLE CARD */
+        /*--------------------------------------------------------------
+        TABLE CARD
+        --------------------------------------------------------------*/
 
         .card {
 
@@ -288,7 +336,7 @@ while ($row = $result->fetch_assoc()) {
 
             box-shadow:
                 0 3px 12px
-                rgba(0,0,0,0.06);
+                rgba(0, 0, 0, 0.06);
 
             overflow-x: auto;
 
@@ -317,6 +365,8 @@ while ($row = $result->fetch_assoc()) {
             border-bottom:
                 1px solid #e5e7eb;
 
+            vertical-align: middle;
+
         }
 
 
@@ -338,7 +388,9 @@ while ($row = $result->fetch_assoc()) {
         }
 
 
-        /* OWNER */
+        /*--------------------------------------------------------------
+        OWNER
+        --------------------------------------------------------------*/
 
         .owner {
 
@@ -347,16 +399,27 @@ while ($row = $result->fetch_assoc()) {
         }
 
 
-        .email {
+        .phone {
 
             color: #6b7280;
 
             font-size: 13px;
 
+            margin-top: 3px;
+
         }
 
 
-        /* GYM */
+        .email {
+
+            word-break: break-word;
+
+        }
+
+
+        /*--------------------------------------------------------------
+        GYM
+        --------------------------------------------------------------*/
 
         .gym {
 
@@ -365,7 +428,9 @@ while ($row = $result->fetch_assoc()) {
         }
 
 
-        /* PLAN */
+        /*--------------------------------------------------------------
+        PLAN
+        --------------------------------------------------------------*/
 
         .plan {
 
@@ -383,7 +448,9 @@ while ($row = $result->fetch_assoc()) {
         }
 
 
-        /* DATES */
+        /*--------------------------------------------------------------
+        DATES
+        --------------------------------------------------------------*/
 
         .date {
 
@@ -394,7 +461,9 @@ while ($row = $result->fetch_assoc()) {
         }
 
 
-        /* STATUS */
+        /*--------------------------------------------------------------
+        STATUS
+        --------------------------------------------------------------*/
 
         .status {
 
@@ -440,15 +509,28 @@ while ($row = $result->fetch_assoc()) {
         }
 
 
-        /* ACTION */
+        /*--------------------------------------------------------------
+        ACTION BUTTONS
+        --------------------------------------------------------------*/
 
-        .view-button {
+        .actions {
+
+            display: flex;
+
+            gap: 6px;
+
+            align-items: center;
+
+            flex-wrap: wrap;
+
+        }
+
+
+        .action-button {
 
             display: inline-block;
 
             padding: 8px 12px;
-
-            background: #111827;
 
             color: white;
 
@@ -463,98 +545,51 @@ while ($row = $result->fetch_assoc()) {
         }
 
 
+        .view-button {
+
+            background: #111827;
+
+        }
+
+
         .view-button:hover {
 
             opacity: 0.85;
 
         }
 
+
         .edit-button {
 
-    display: inline-block;
+            background: #2563eb;
 
-    padding: 8px 12px;
-
-    background: #2563eb;
-
-    color: white;
-
-    text-decoration: none;
-
-    border-radius: 6px;
-
-    font-size: 13px;
-
-    white-space: nowrap;
-
-    margin-left: 4px;
-
-}
+        }
 
 
-.edit-button:hover {
+        .edit-button:hover {
 
-    opacity: 0.85;
+            opacity: 0.85;
 
-}
-
-
-.delete-button {
-
-    display: inline-block;
-
-    padding: 8px 12px;
-
-    background: #dc2626;
-
-    color: white;
-
-    text-decoration: none;
-
-    border-radius: 6px;
-
-    font-size: 13px;
-
-    white-space: nowrap;
-
-    margin-left: 4px;
-
-}
+        }
 
 
-.delete-button:hover {
+        .delete-button {
 
-    opacity: 0.85;
+            background: #dc2626;
 
-}
-
-.create-button {
-
-    display: inline-block;
-
-    padding: 10px 18px;
-
-    background: #16a34a;
-
-    color: white;
-
-    text-decoration: none;
-
-    border-radius: 8px;
-
-    font-weight: bold;
-
-}
+        }
 
 
-.create-button:hover {
+        .delete-button:hover {
 
-    opacity: 0.85;
+            opacity: 0.85;
 
-}
+        }
 
 
-        /* EMPTY */
+        /*--------------------------------------------------------------
+        EMPTY
+        --------------------------------------------------------------*/
 
         .empty {
 
@@ -567,7 +602,25 @@ while ($row = $result->fetch_assoc()) {
         }
 
 
-        /* MOBILE */
+        .empty h2 {
+
+            margin-bottom: 8px;
+
+            color: #374151;
+
+        }
+
+
+        .empty p {
+
+            margin: 0;
+
+        }
+
+
+        /*--------------------------------------------------------------
+        MOBILE
+        --------------------------------------------------------------*/
 
         @media (max-width: 900px) {
 
@@ -575,6 +628,15 @@ while ($row = $result->fetch_assoc()) {
 
                 grid-template-columns:
                     repeat(2, 1fr);
+
+            }
+
+
+            .header {
+
+                align-items: flex-start;
+
+                flex-direction: column;
 
             }
 
@@ -590,21 +652,24 @@ while ($row = $result->fetch_assoc()) {
             }
 
 
-            .header {
+            .summary {
 
-                flex-direction: column;
-
-                align-items: flex-start;
-
-                gap: 15px;
+                grid-template-columns: 1fr;
 
             }
 
 
-            .summary {
+            .header-actions {
 
-                grid-template-columns:
-                    1fr;
+                width: 100%;
+
+            }
+
+
+            .create-button,
+            .back {
+
+                text-align: center;
 
             }
 
@@ -621,9 +686,12 @@ while ($row = $result->fetch_assoc()) {
 <div class="container">
 
 
-    <!-- HEADER -->
+    <!--==============================================================
+    HEADER
+    ==============================================================-->
 
     <div class="header">
+
 
         <div>
 
@@ -638,32 +706,40 @@ while ($row = $result->fetch_assoc()) {
         </div>
 
 
-        <div style="display: flex; gap: 10px;">
+        <div class="header-actions">
 
-    <a
-        href="admin_subscription_create.php"
-        class="create-button"
-    >
-        + Create Subscription
-    </a>
 
-    <a
-        href="admin_dashboard.php"
-        class="back"
-    >
-        ← Dashboard
-    </a>
+            <a
+                href="admin_subscription_create.php"
+                class="create-button"
+            >
+                + Create Subscription
+            </a>
 
-</div>
+
+            <a
+                href="admin_dashboard.php"
+                class="back"
+            >
+                ← Dashboard
+            </a>
+
+
+        </div>
+
 
     </div>
 
 
 
-    <!-- SUMMARY -->
+    <!--==============================================================
+    SUMMARY
+    ==============================================================-->
 
     <div class="summary">
 
+
+        <!-- TOTAL -->
 
         <div class="summary-card">
 
@@ -674,13 +750,17 @@ while ($row = $result->fetch_assoc()) {
             <div class="summary-number">
 
                 <?php
+
                 echo $total_subscriptions;
+
                 ?>
 
             </div>
 
         </div>
 
+
+        <!-- ACTIVE -->
 
         <div class="summary-card">
 
@@ -691,13 +771,17 @@ while ($row = $result->fetch_assoc()) {
             <div class="summary-number">
 
                 <?php
+
                 echo $active_subscriptions;
+
                 ?>
 
             </div>
 
         </div>
 
+
+        <!-- EXPIRED -->
 
         <div class="summary-card">
 
@@ -708,13 +792,17 @@ while ($row = $result->fetch_assoc()) {
             <div class="summary-number">
 
                 <?php
+
                 echo $expired_subscriptions;
+
                 ?>
 
             </div>
 
         </div>
 
+
+        <!-- CANCELLED -->
 
         <div class="summary-card">
 
@@ -725,7 +813,9 @@ while ($row = $result->fetch_assoc()) {
             <div class="summary-number">
 
                 <?php
+
                 echo $cancelled_subscriptions;
+
                 ?>
 
             </div>
@@ -737,7 +827,9 @@ while ($row = $result->fetch_assoc()) {
 
 
 
-    <!-- SUBSCRIPTIONS -->
+    <!--==============================================================
+    SUBSCRIPTIONS TABLE
+    ==============================================================-->
 
     <div class="card">
 
@@ -746,6 +838,7 @@ while ($row = $result->fetch_assoc()) {
 
 
             <table>
+
 
                 <thead>
 
@@ -812,7 +905,9 @@ while ($row = $result->fetch_assoc()) {
                     <tr>
 
 
-                        <!-- ID -->
+                        <!--================================================
+                        ID
+                        =================================================-->
 
                         <td>
 
@@ -829,7 +924,9 @@ while ($row = $result->fetch_assoc()) {
 
 
 
-                        <!-- OWNER -->
+                        <!--================================================
+                        OWNER
+                        =================================================-->
 
                         <td>
 
@@ -848,7 +945,7 @@ while ($row = $result->fetch_assoc()) {
                             </div>
 
 
-                            <div class="email">
+                            <div class="phone">
 
                                 <?php
 
@@ -866,9 +963,11 @@ while ($row = $result->fetch_assoc()) {
 
 
 
-                        <!-- EMAIL -->
+                        <!--================================================
+                        EMAIL
+                        =================================================-->
 
-                        <td>
+                        <td class="email">
 
                             <?php
 
@@ -884,7 +983,9 @@ while ($row = $result->fetch_assoc()) {
 
 
 
-                        <!-- GYM -->
+                        <!--================================================
+                        GYM
+                        =================================================-->
 
                         <td class="gym">
 
@@ -902,7 +1003,9 @@ while ($row = $result->fetch_assoc()) {
 
 
 
-                        <!-- PLAN -->
+                        <!--================================================
+                        PLAN
+                        =================================================-->
 
                         <td class="plan">
 
@@ -920,7 +1023,9 @@ while ($row = $result->fetch_assoc()) {
 
 
 
-                        <!-- PRICE -->
+                        <!--================================================
+                        PRICE
+                        =================================================-->
 
                         <td class="price">
 
@@ -929,6 +1034,7 @@ while ($row = $result->fetch_assoc()) {
                             <?php
 
                             echo number_format(
+                                (float)
                                 $subscription[
                                     "price"
                                 ],
@@ -941,7 +1047,9 @@ while ($row = $result->fetch_assoc()) {
 
 
 
-                        <!-- MEMBER LIMIT -->
+                        <!--================================================
+                        MEMBER LIMIT
+                        =================================================-->
 
                         <td>
 
@@ -958,7 +1066,9 @@ while ($row = $result->fetch_assoc()) {
                                         "member_limit"
                                     ];
 
-                            } else {
+                            }
+
+                            else {
 
                                 echo "Unlimited";
 
@@ -970,20 +1080,38 @@ while ($row = $result->fetch_assoc()) {
 
 
 
-                        <!-- START -->
+                        <!--================================================
+                        START DATE
+                        =================================================-->
 
                         <td class="date">
 
                             <?php
 
-                            echo date(
-                                "d M Y",
-                                strtotime(
+                            if (
+                                !empty(
                                     $subscription[
                                         "start_date"
                                     ]
                                 )
-                            );
+                            ) {
+
+                                echo date(
+                                    "d M Y",
+                                    strtotime(
+                                        $subscription[
+                                            "start_date"
+                                        ]
+                                    )
+                                );
+
+                            }
+
+                            else {
+
+                                echo "-";
+
+                            }
 
                             ?>
 
@@ -991,20 +1119,38 @@ while ($row = $result->fetch_assoc()) {
 
 
 
-                        <!-- END -->
+                        <!--================================================
+                        EXPIRY DATE
+                        =================================================-->
 
                         <td class="date">
 
                             <?php
 
-                            echo date(
-                                "d M Y",
-                                strtotime(
+                            if (
+                                !empty(
                                     $subscription[
                                         "end_date"
                                     ]
                                 )
-                            );
+                            ) {
+
+                                echo date(
+                                    "d M Y",
+                                    strtotime(
+                                        $subscription[
+                                            "end_date"
+                                        ]
+                                    )
+                                );
+
+                            }
+
+                            else {
+
+                                echo "-";
+
+                            }
 
                             ?>
 
@@ -1012,7 +1158,9 @@ while ($row = $result->fetch_assoc()) {
 
 
 
-                        <!-- STATUS -->
+                        <!--================================================
+                        STATUS
+                        =================================================-->
 
                         <td>
 
@@ -1029,14 +1177,17 @@ while ($row = $result->fetch_assoc()) {
 
                             ?>
 
+
                             <span
-                                class="status <?php echo $status_class; ?>"
+                                class="status <?php echo htmlspecialchars($status_class); ?>"
                             >
 
                                 <?php
 
                                 echo htmlspecialchars(
-                                    $status
+                                    ucfirst(
+                                        $status
+                                    )
                                 );
 
                                 ?>
@@ -1047,33 +1198,49 @@ while ($row = $result->fetch_assoc()) {
 
 
 
-                        <!-- ACTION -->
+                        <!--================================================
+                        ACTIONS
+                        =================================================-->
 
-<td>
+                        <td>
 
-    <a
-        href="admin_subscription_details.php?id=<?php echo (int)$subscription["subscription_id"]; ?>"
-        class="view-button"
-    >
-        View
-    </a>
+                            <div class="actions">
 
-    <a
-        href="admin_subscription_edit.php?id=<?php echo (int)$subscription["subscription_id"]; ?>"
-        class="edit-button"
-    >
-        Edit
-    </a>
 
-    <a
-        href="admin_subscription_delete.php?id=<?php echo (int)$subscription["subscription_id"]; ?>"
-        class="delete-button"
-        onclick="return confirm('Are you sure you want to delete this subscription?');"
-    >
-        Delete
-    </a>
+                                <!-- VIEW -->
 
-</td>
+                                <a
+                                    href="admin_subscription_details.php?id=<?php echo (int)$subscription["subscription_id"]; ?>"
+                                    class="action-button view-button"
+                                >
+                                    View
+                                </a>
+
+
+                                <!-- EDIT -->
+
+                                <a
+                                    href="admin_subscription_edit.php?id=<?php echo (int)$subscription["subscription_id"]; ?>"
+                                    class="action-button edit-button"
+                                >
+                                    Edit
+                                </a>
+
+
+                                <!-- DELETE -->
+
+                                <a
+                                    href="admin_subscription_delete.php?id=<?php echo (int)$subscription["subscription_id"]; ?>"
+                                    class="action-button delete-button"
+                                    onclick="return confirm('Are you sure you want to delete this subscription?');"
+                                >
+                                    Delete
+                                </a>
+
+
+                            </div>
+
+                        </td>
 
 
                     </tr>
@@ -1084,11 +1251,16 @@ while ($row = $result->fetch_assoc()) {
 
                 </tbody>
 
+
             </table>
 
 
         <?php else: ?>
 
+
+            <!--==========================================================
+            EMPTY STATE
+            ==============================================================-->
 
             <div class="empty">
 
