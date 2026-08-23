@@ -1,4 +1,3 @@
-USE defaultdb;
 -- MySQL dump 10.13  Distrib 8.0.40, for Win64 (x86_64)
 --
 -- Host: localhost    Database: fitness_management
@@ -8,13 +7,40 @@ USE defaultdb;
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
 /*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
-/*!50503 SET NAMES utf8mb4 */;
+/*!50503 SET NAMES utf8 */;
 /*!40103 SET @OLD_TIME_ZONE=@@TIME_ZONE */;
 /*!40103 SET TIME_ZONE='+00:00' */;
 /*!40014 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0 */;
 /*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
 /*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
+
+--
+-- Table structure for table `admins`
+--
+
+DROP TABLE IF EXISTS `admins`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `admins` (
+  `admin_id` int NOT NULL AUTO_INCREMENT,
+  `name` varchar(100) NOT NULL,
+  `email` varchar(150) NOT NULL,
+  `password` varchar(255) NOT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`admin_id`),
+  UNIQUE KEY `unique_admin_email` (`email`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `admins`
+--
+
+LOCK TABLES `admins` WRITE;
+/*!40000 ALTER TABLE `admins` DISABLE KEYS */;
+/*!40000 ALTER TABLE `admins` ENABLE KEYS */;
+UNLOCK TABLES;
 
 --
 -- Table structure for table `attendance`
@@ -61,7 +87,7 @@ CREATE TABLE `attendance_qr_tokens` (
   UNIQUE KEY `token` (`token`),
   KEY `gym_id` (`gym_id`),
   CONSTRAINT `attendance_qr_tokens_ibfk_1` FOREIGN KEY (`gym_id`) REFERENCES `gyms` (`gym_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=21 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=23 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -70,7 +96,7 @@ CREATE TABLE `attendance_qr_tokens` (
 
 LOCK TABLES `attendance_qr_tokens` WRITE;
 /*!40000 ALTER TABLE `attendance_qr_tokens` DISABLE KEYS */;
-INSERT INTO `attendance_qr_tokens` VALUES (15,2,'d54c8499a2eb67ffc0fb07b248717fd36f2d27963d562f569a38c1590c590afb','2026-08-21 00:01:08','2026-08-20 22:00:08'),(20,3,'8fbca0ef2ea28e6874c4101e145778790e45dd217fe91ad6da53647c289236f2','2026-08-21 21:49:15','2026-08-21 19:48:15');
+INSERT INTO `attendance_qr_tokens` VALUES (15,2,'d54c8499a2eb67ffc0fb07b248717fd36f2d27963d562f569a38c1590c590afb','2026-08-21 00:01:08','2026-08-20 22:00:08'),(22,3,'0fea19c14ab07f43726aed34637068959884c9426f1f8b757122fb6d7b1d1b7d','2026-08-22 19:13:21','2026-08-22 17:12:21');
 /*!40000 ALTER TABLE `attendance_qr_tokens` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -144,8 +170,11 @@ CREATE TABLE `gyms` (
   `address` varchar(255) DEFAULT NULL,
   `phone` varchar(20) DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `subscription_plan_id` int NOT NULL DEFAULT '1',
   PRIMARY KEY (`gym_id`),
   KEY `owner_id` (`owner_id`),
+  KEY `fk_gym_subscription_plan` (`subscription_plan_id`),
+  CONSTRAINT `fk_gym_subscription_plan` FOREIGN KEY (`subscription_plan_id`) REFERENCES `subscription_plans` (`subscription_plan_id`),
   CONSTRAINT `gyms_ibfk_1` FOREIGN KEY (`owner_id`) REFERENCES `gym_owners` (`owner_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -156,7 +185,7 @@ CREATE TABLE `gyms` (
 
 LOCK TABLES `gyms` WRITE;
 /*!40000 ALTER TABLE `gyms` DISABLE KEYS */;
-INSERT INTO `gyms` VALUES (1,1,'Power Fitness','Karachi, Pakistan','03001234567','2026-08-20 17:30:09'),(2,2,'Prop Gym','Karachi, DHA','123456789','2026-08-20 19:12:23'),(3,4,'Fitness Must','DHA Phase 2 ext, Karachi','03108707908','2026-08-21 09:27:54');
+INSERT INTO `gyms` VALUES (1,1,'Power Fitness','Karachi, Pakistan','03001234567','2026-08-20 17:30:09',1),(2,2,'Prop Gym','Karachi, DHA','123456789','2026-08-20 19:12:23',1),(3,4,'Fitness Must','DHA Phase 2 ext, Karachi','03108707908','2026-08-21 09:27:54',1);
 /*!40000 ALTER TABLE `gyms` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -289,6 +318,69 @@ INSERT INTO `payments` VALUES (1,1,1,3000.00,'2026-08-01','2026-08-20 22:32:00',
 UNLOCK TABLES;
 
 --
+-- Table structure for table `subscription_payments`
+--
+
+DROP TABLE IF EXISTS `subscription_payments`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `subscription_payments` (
+  `payment_id` int NOT NULL AUTO_INCREMENT,
+  `gym_id` int NOT NULL,
+  `subscription_plan_id` int NOT NULL,
+  `amount` decimal(10,2) NOT NULL,
+  `payment_method` enum('jazzcash','bank','other') NOT NULL DEFAULT 'jazzcash',
+  `transaction_reference` varchar(150) DEFAULT NULL,
+  `payment_proof` varchar(255) DEFAULT NULL,
+  `payment_status` enum('pending','approved','rejected') NOT NULL DEFAULT 'pending',
+  `payment_date` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `admin_note` text,
+  PRIMARY KEY (`payment_id`),
+  KEY `gym_id` (`gym_id`),
+  KEY `subscription_plan_id` (`subscription_plan_id`),
+  CONSTRAINT `subscription_payments_ibfk_1` FOREIGN KEY (`gym_id`) REFERENCES `gyms` (`gym_id`),
+  CONSTRAINT `subscription_payments_ibfk_2` FOREIGN KEY (`subscription_plan_id`) REFERENCES `subscription_plans` (`subscription_plan_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `subscription_payments`
+--
+
+LOCK TABLES `subscription_payments` WRITE;
+/*!40000 ALTER TABLE `subscription_payments` DISABLE KEYS */;
+/*!40000 ALTER TABLE `subscription_payments` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `subscription_plans`
+--
+
+DROP TABLE IF EXISTS `subscription_plans`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `subscription_plans` (
+  `subscription_plan_id` int NOT NULL AUTO_INCREMENT,
+  `plan_name` varchar(50) NOT NULL,
+  `price` decimal(10,2) NOT NULL DEFAULT '0.00',
+  `member_limit` int DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`subscription_plan_id`),
+  UNIQUE KEY `unique_plan_name` (`plan_name`)
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `subscription_plans`
+--
+
+LOCK TABLES `subscription_plans` WRITE;
+/*!40000 ALTER TABLE `subscription_plans` DISABLE KEYS */;
+INSERT INTO `subscription_plans` VALUES (1,'Free',0.00,20,'2026-08-22 19:44:11'),(2,'Basic',499.00,50,'2026-08-22 19:44:11'),(3,'Pro',799.00,75,'2026-08-22 19:44:11'),(4,'Ultra',999.00,NULL,'2026-08-22 19:44:11');
+/*!40000 ALTER TABLE `subscription_plans` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
 -- Table structure for table `weight_records`
 --
 
@@ -325,4 +417,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-08-22 19:07:27
+-- Dump completed on 2026-08-23 15:56:19
