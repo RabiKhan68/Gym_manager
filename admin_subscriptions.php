@@ -959,11 +959,11 @@ while ($row = $result->fetch_assoc()) {
                         <td>
 
                             <a
-                                href="admin_owner_details.php?id=<?php echo (int)$subscription["owner_id"]; ?>"
+                                href="admin_owner_details.php?id=<?php echo (int)$subscription["subscription_id"]; ?>"
                                 class="view-button"
                             >
 
-                                Owner Details
+                                View Subscription
 
                             </a>
 
