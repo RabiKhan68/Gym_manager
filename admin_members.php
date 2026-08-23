@@ -40,7 +40,7 @@ $sql = "SELECT
             m.phone,
             m.email,
             m.status,
-            m.created_at,
+            m.joining_date,
 
             g.gym_id,
             g.gym_name,
@@ -635,7 +635,7 @@ $result = $stmt->get_result();
                         </th>
 
                         <th>
-                            Registered
+                            Joining Date
                         </th>
 
                         <th>
@@ -796,14 +796,14 @@ $result = $stmt->get_result();
 
                             if (
                                 !empty(
-                                    $member["created_at"]
+                                    $member["joining_date"]
                                 )
                             ) {
 
                                 echo date(
                                     "d M Y",
                                     strtotime(
-                                        $member["created_at"]
+                                        $member["joining_date"]
                                     )
                                 );
 
