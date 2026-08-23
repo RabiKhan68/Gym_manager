@@ -1,0 +1,48 @@
+                    ┌──────────────────────┐
+                    │ subscription_plans   │
+                    │                      │
+                    │ Basic                │
+                    │ Standard             │
+                    │ Premium              │
+                    │ Unlimited            │
+                    └──────────┬───────────┘
+                               │
+                               ▼
+                    ┌──────────────────────┐
+                    │ my_subscription.php  │
+                    │                      │
+                    │ View current plan    │
+                    │ View upcoming plan   │
+                    │ View available plans │
+                    └──────────┬───────────┘
+                               │
+                     Choose / Change / Renew
+                               │
+              ┌────────────────┴────────────────┐
+              ▼                                 ▼
+┌──────────────────────────┐       ┌──────────────────────────┐
+│ subscription_change.php  │       │ subscription_renew.php  │
+│                          │       │                          │
+│ New plan                 │       │ Same plan                │
+│ Calculate next period    │       │ Calculate next period    │
+│ Validate members         │       │ Validate subscription    │
+│ Create scheduled record  │       │ Create scheduled record  │
+└────────────┬─────────────┘       └────────────┬─────────────┘
+             │                                  │
+             └────────────────┬─────────────────┘
+                              ▼
+                 gym_owner_subscriptions
+                              │
+                 ┌────────────┴────────────┐
+                 │                         │
+              ACTIVE                   SCHEDULED
+                 │                         │
+                 │                    start_date arrives
+                 │                         │
+                 │                         ▼
+                 │              subscription_cron.php
+                 │                         │
+                 │              scheduled → active
+                 │                         │
+                 ▼                         ▼
+              EXPIRED  ◄──────────────  ACTIVE
