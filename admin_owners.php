@@ -9,11 +9,6 @@ require_once "backend/db.php";
 |--------------------------------------------------------------------------
 | Check admin login
 |--------------------------------------------------------------------------
-|
-| IMPORTANT:
-| Use the same session variable that your working
-| admin_dashboard.php uses.
-|
 */
 
 if (!isset($_SESSION["admin_id"])) {
@@ -26,7 +21,7 @@ if (!isset($_SESSION["admin_id"])) {
 
 /*
 |--------------------------------------------------------------------------
-| Get all gym owners and their gyms
+| Get all gym owners, gyms and member counts
 |--------------------------------------------------------------------------
 */
 
@@ -40,12 +35,28 @@ $sql = "SELECT
             g.gym_id,
             g.gym_name,
             g.address,
-            g.phone AS gym_phone
+            g.phone AS gym_phone,
+
+            COUNT(DISTINCT m.member_id) AS total_members
 
         FROM gym_owners go
 
         LEFT JOIN gyms g
             ON go.owner_id = g.owner_id
+
+        LEFT JOIN members m
+            ON g.gym_id = m.gym_id
+
+        GROUP BY
+            go.owner_id,
+            go.name,
+            go.email,
+            go.phone,
+            go.created_at,
+            g.gym_id,
+            g.gym_name,
+            g.address,
+            g.phone
 
         ORDER BY go.created_at DESC";
 
@@ -96,7 +107,7 @@ $result = $conn->query($sql);
 
         .container {
 
-            max-width: 1200px;
+            max-width: 1400px;
 
             margin: auto;
 
@@ -104,6 +115,8 @@ $result = $conn->query($sql);
 
         }
 
+
+        /* HEADER */
 
         .header {
 
@@ -128,6 +141,15 @@ $result = $conn->query($sql);
         }
 
 
+        .header p {
+
+            margin: 5px 0 0;
+
+            color: #6b7280;
+
+        }
+
+
         .back {
 
             display: inline-block;
@@ -144,6 +166,15 @@ $result = $conn->query($sql);
 
         }
 
+
+        .back:hover {
+
+            opacity: 0.85;
+
+        }
+
+
+        /* CARD */
 
         .card {
 
@@ -162,6 +193,8 @@ $result = $conn->query($sql);
         }
 
 
+        /* TABLE */
+
         table {
 
             width: 100%;
@@ -169,7 +202,7 @@ $result = $conn->query($sql);
             border-collapse:
                 collapse;
 
-            min-width: 900px;
+            min-width: 1100px;
 
         }
 
@@ -189,19 +222,25 @@ $result = $conn->query($sql);
 
         th {
 
-            background: #f8fafc;
+            background:
+                #f8fafc;
 
             font-weight: bold;
+
+            white-space: nowrap;
 
         }
 
 
         tr:hover {
 
-            background: #f9fafb;
+            background:
+                #f9fafb;
 
         }
 
+
+        /* OWNER */
 
         .owner-id {
 
@@ -209,6 +248,22 @@ $result = $conn->query($sql);
 
         }
 
+
+        .owner-name {
+
+            font-weight: bold;
+
+        }
+
+
+        .email {
+
+            color: #374151;
+
+        }
+
+
+        /* GYM */
 
         .gym-name {
 
@@ -226,12 +281,18 @@ $result = $conn->query($sql);
         }
 
 
-        .email {
+        /* MEMBERS */
 
-            color: #374151;
+        .members-count {
+
+            font-weight: bold;
+
+            font-size: 16px;
 
         }
 
+
+        /* DATE */
 
         .date {
 
@@ -241,6 +302,39 @@ $result = $conn->query($sql);
 
         }
 
+
+        /* VIEW BUTTON */
+
+        .view-button {
+
+            display: inline-block;
+
+            padding: 8px 12px;
+
+            background:
+                #111827;
+
+            color: white;
+
+            text-decoration: none;
+
+            border-radius: 6px;
+
+            font-size: 13px;
+
+            white-space: nowrap;
+
+        }
+
+
+        .view-button:hover {
+
+            opacity: 0.85;
+
+        }
+
+
+        /* EMPTY */
 
         .empty {
 
@@ -252,6 +346,8 @@ $result = $conn->query($sql);
 
         }
 
+
+        /* MOBILE */
 
         @media (max-width: 700px) {
 
@@ -268,6 +364,9 @@ $result = $conn->query($sql);
                     flex-start;
 
                 gap: 15px;
+
+                flex-direction:
+                    column;
 
             }
 
@@ -287,6 +386,7 @@ $result = $conn->query($sql);
     <!-- HEADER -->
 
     <div class="header">
+
 
         <div>
 
@@ -310,6 +410,7 @@ $result = $conn->query($sql);
 
         </a>
 
+
     </div>
 
 
@@ -324,47 +425,65 @@ $result = $conn->query($sql);
 
             <table>
 
+
                 <thead>
 
+
                     <tr>
+
 
                         <th>
                             ID
                         </th>
 
+
                         <th>
                             Owner
                         </th>
+
 
                         <th>
                             Email
                         </th>
 
+
                         <th>
                             Owner Phone
                         </th>
+
 
                         <th>
                             Gym
                         </th>
 
+
                         <th>
                             Gym Phone
                         </th>
+
+
+                        <th>
+                            Members
+                        </th>
+
 
                         <th>
                             Address
                         </th>
 
+
                         <th>
                             Registered
                         </th>
+
 
                         <th>
                             Action
                         </th>
 
+
                     </tr>
+
 
                 </thead>
 
@@ -381,20 +500,24 @@ $result = $conn->query($sql);
                     <tr>
 
 
+                        <!-- ID -->
+
                         <td class="owner-id">
 
                             <?php
 
-                            echo htmlspecialchars(
-                                $owner["owner_id"]
-                            );
+                            echo (int)
+                                $owner["owner_id"];
 
                             ?>
 
                         </td>
 
 
-                        <td>
+
+                        <!-- OWNER -->
+
+                        <td class="owner-name">
 
                             <?php
 
@@ -406,6 +529,9 @@ $result = $conn->query($sql);
 
                         </td>
 
+
+
+                        <!-- EMAIL -->
 
                         <td class="email">
 
@@ -419,6 +545,9 @@ $result = $conn->query($sql);
 
                         </td>
 
+
+
+                        <!-- OWNER PHONE -->
 
                         <td>
 
@@ -434,12 +563,17 @@ $result = $conn->query($sql);
                         </td>
 
 
+
+                        <!-- GYM -->
+
                         <td class="gym-name">
 
                             <?php
 
                             if (
-                                $owner["gym_name"]
+                                !empty(
+                                    $owner["gym_name"]
+                                )
                             ) {
 
                                 echo htmlspecialchars(
@@ -459,6 +593,9 @@ $result = $conn->query($sql);
                         </td>
 
 
+
+                        <!-- GYM PHONE -->
+
                         <td>
 
                             <?php
@@ -473,6 +610,24 @@ $result = $conn->query($sql);
                         </td>
 
 
+
+                        <!-- MEMBERS -->
+
+                        <td class="members-count">
+
+                            <?php
+
+                            echo (int)
+                                $owner["total_members"];
+
+                            ?>
+
+                        </td>
+
+
+
+                        <!-- ADDRESS -->
+
                         <td>
 
                             <?php
@@ -486,25 +641,9 @@ $result = $conn->query($sql);
 
                         </td>
 
-                        <td>
 
-    <a
-        href="admin_owner_details.php?id=<?php echo (int)$owner["owner_id"]; ?>"
-        style="
-            display:inline-block;
-            padding:8px 12px;
-            background:#111827;
-            color:white;
-            text-decoration:none;
-            border-radius:6px;
-            font-size:13px;
-        "
-    >
-        View Details
-    </a>
 
-</td>
-
+                        <!-- REGISTERED -->
 
                         <td class="date">
 
@@ -524,6 +663,23 @@ $result = $conn->query($sql);
                         </td>
 
 
+
+                        <!-- ACTION -->
+
+                        <td>
+
+                            <a
+                                href="admin_owner_details.php?id=<?php echo (int)$owner["owner_id"]; ?>"
+                                class="view-button"
+                            >
+
+                                View Details
+
+                            </a>
+
+                        </td>
+
+
                     </tr>
 
 
@@ -531,6 +687,7 @@ $result = $conn->query($sql);
 
 
                 </tbody>
+
 
             </table>
 
