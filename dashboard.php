@@ -417,6 +417,13 @@ $unpaid_result =
 
         </a>
 
+        <a
+            href="my_subscription.php"
+            class="action"
+        >
+            My Subscription
+        </a>
+
 
         <a
             href="logout.php"
