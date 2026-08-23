@@ -7,7 +7,7 @@ require_once "backend/db.php";
 
 /*
 |--------------------------------------------------------------------------
-| Check gym owner login
+| AUTHENTICATION
 |--------------------------------------------------------------------------
 */
 
@@ -20,37 +20,437 @@ if (!isset($_SESSION["owner_id"])) {
 
 $owner_id = (int) $_SESSION["owner_id"];
 
+$today = date("Y-m-d");
+
 
 /*
 |--------------------------------------------------------------------------
-| Get current subscription
+| HELPER FUNCTIONS
 |--------------------------------------------------------------------------
 */
 
-$sql = "SELECT
+function e($value)
+{
+    return htmlspecialchars(
+        (string) $value,
+        ENT_QUOTES,
+        "UTF-8"
+    );
+}
 
-            s.subscription_id,
-            s.subscription_plan_id,
-            s.start_date,
-            s.end_date,
-            s.status,
-            s.created_at,
 
-            sp.plan_name,
-            sp.price,
-            sp.member_limit
+function format_date($date)
+{
+    if (!$date) {
+        return "-";
+    }
 
-        FROM gym_owner_subscriptions s
+    $timestamp = strtotime($date);
 
-        INNER JOIN subscription_plans sp
-            ON s.subscription_plan_id =
-               sp.subscription_plan_id
+    if (!$timestamp) {
+        return "-";
+    }
 
-        WHERE s.owner_id = ?
+    return date("d M Y", $timestamp);
+}
 
-        ORDER BY s.subscription_id DESC
 
-        LIMIT 1";
+function format_price($price)
+{
+    return number_format(
+        (float) $price,
+        2
+    );
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| ACTIVATE DUE SCHEDULED SUBSCRIPTION
+|--------------------------------------------------------------------------
+|
+| If a scheduled subscription has reached its start date,
+| promote it to active.
+|
+| The old active subscription is expired first.
+|
+| This keeps the subscription state consistent when the owner
+| opens this page after the scheduled start date.
+|
+*/
+
+$conn->begin_transaction();
+
+try {
+
+    /*
+    |--------------------------------------------------------------------------
+    | Find an active subscription that has already expired
+    |--------------------------------------------------------------------------
+    */
+
+    $sql = "
+        SELECT
+            subscription_id
+
+        FROM gym_owner_subscriptions
+
+        WHERE owner_id = ?
+
+        AND status = 'active'
+
+        AND end_date < ?
+
+        ORDER BY end_date ASC,
+                 subscription_id ASC
+
+        FOR UPDATE
+    ";
+
+    $stmt = $conn->prepare($sql);
+
+    if (!$stmt) {
+        throw new Exception(
+            "Unable to check expired subscription."
+        );
+    }
+
+    $stmt->bind_param(
+        "is",
+        $owner_id,
+        $today
+    );
+
+    $stmt->execute();
+
+    $result = $stmt->get_result();
+
+    $expired_ids = [];
+
+    while ($row = $result->fetch_assoc()) {
+
+        $expired_ids[] =
+            (int) $row["subscription_id"];
+
+    }
+
+    $stmt->close();
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Mark expired active subscriptions as expired
+    |--------------------------------------------------------------------------
+    */
+
+    if (count($expired_ids) > 0) {
+
+        $sql = "
+            UPDATE gym_owner_subscriptions
+
+            SET status = 'expired'
+
+            WHERE owner_id = ?
+
+            AND status = 'active'
+
+            AND end_date < ?
+        ";
+
+        $stmt = $conn->prepare($sql);
+
+        if (!$stmt) {
+            throw new Exception(
+                "Unable to update expired subscription."
+            );
+        }
+
+        $stmt->bind_param(
+            "is",
+            $owner_id,
+            $today
+        );
+
+        if (!$stmt->execute()) {
+
+            throw new Exception(
+                "Unable to update expired subscription."
+            );
+
+        }
+
+        $stmt->close();
+
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Find scheduled subscription whose start date has arrived
+    |--------------------------------------------------------------------------
+    */
+
+    $sql = "
+        SELECT
+            subscription_id,
+            subscription_plan_id,
+            start_date,
+            end_date
+
+        FROM gym_owner_subscriptions
+
+        WHERE owner_id = ?
+
+        AND status = 'scheduled'
+
+        AND start_date <= ?
+
+        ORDER BY start_date ASC,
+                 subscription_id ASC
+
+        LIMIT 1
+
+        FOR UPDATE
+    ";
+
+    $stmt = $conn->prepare($sql);
+
+    if (!$stmt) {
+        throw new Exception(
+            "Unable to check scheduled subscription."
+        );
+    }
+
+    $stmt->bind_param(
+        "is",
+        $owner_id,
+        $today
+    );
+
+    $stmt->execute();
+
+    $result = $stmt->get_result();
+
+    $due_subscription =
+        $result->fetch_assoc();
+
+    $stmt->close();
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Activate scheduled subscription
+    |--------------------------------------------------------------------------
+    */
+
+    if ($due_subscription) {
+
+        /*
+        |--------------------------------------------------------------------------
+        | Make sure there is no active subscription remaining
+        |--------------------------------------------------------------------------
+        */
+
+        $sql = "
+            SELECT
+                subscription_id
+
+            FROM gym_owner_subscriptions
+
+            WHERE owner_id = ?
+
+            AND status = 'active'
+
+            LIMIT 1
+
+            FOR UPDATE
+        ";
+
+        $stmt = $conn->prepare($sql);
+
+        if (!$stmt) {
+            throw new Exception(
+                "Unable to verify active subscription."
+            );
+        }
+
+        $stmt->bind_param(
+            "i",
+            $owner_id
+        );
+
+        $stmt->execute();
+
+        $result = $stmt->get_result();
+
+        $active_subscription =
+            $result->fetch_assoc();
+
+        $stmt->close();
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | If an active subscription somehow remains,
+        | expire it before activating the scheduled one.
+        |--------------------------------------------------------------------------
+        */
+
+        if ($active_subscription) {
+
+            $sql = "
+                UPDATE gym_owner_subscriptions
+
+                SET status = 'expired'
+
+                WHERE subscription_id = ?
+            ";
+
+            $stmt = $conn->prepare($sql);
+
+            if (!$stmt) {
+                throw new Exception(
+                    "Unable to close previous subscription."
+                );
+            }
+
+            $active_id =
+                (int)
+                $active_subscription[
+                    "subscription_id"
+                ];
+
+            $stmt->bind_param(
+                "i",
+                $active_id
+            );
+
+            if (!$stmt->execute()) {
+
+                throw new Exception(
+                    "Unable to close previous subscription."
+                );
+
+            }
+
+            $stmt->close();
+
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Activate scheduled subscription
+        |--------------------------------------------------------------------------
+        */
+
+        $sql = "
+            UPDATE gym_owner_subscriptions
+
+            SET status = 'active'
+
+            WHERE subscription_id = ?
+
+            AND status = 'scheduled'
+        ";
+
+        $stmt = $conn->prepare($sql);
+
+        if (!$stmt) {
+            throw new Exception(
+                "Unable to activate scheduled subscription."
+            );
+        }
+
+        $scheduled_id =
+            (int)
+            $due_subscription[
+                "subscription_id"
+            ];
+
+        $stmt->bind_param(
+            "i",
+            $scheduled_id
+        );
+
+        if (!$stmt->execute()) {
+
+            throw new Exception(
+                "Unable to activate scheduled subscription."
+            );
+
+        }
+
+        $stmt->close();
+
+    }
+
+
+    $conn->commit();
+
+}
+
+catch (Exception $e) {
+
+    $conn->rollback();
+
+    die(
+        "Subscription state error: " .
+        e($e->getMessage())
+    );
+
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| GET CURRENT ACTIVE SUBSCRIPTION
+|--------------------------------------------------------------------------
+|
+| A subscription is CURRENT only when:
+|
+| - owner matches
+| - status = active
+| - start date has arrived
+| - end date has not passed
+|
+*/
+
+$current_subscription = null;
+
+$sql = "
+    SELECT
+
+        s.subscription_id,
+        s.subscription_plan_id,
+        s.start_date,
+        s.end_date,
+        s.status,
+        s.created_at,
+
+        sp.plan_name,
+        sp.price,
+        sp.member_limit
+
+    FROM gym_owner_subscriptions s
+
+    INNER JOIN subscription_plans sp
+        ON s.subscription_plan_id =
+           sp.subscription_plan_id
+
+    WHERE s.owner_id = ?
+
+    AND s.status = 'active'
+
+    AND s.start_date <= ?
+
+    AND s.end_date >= ?
+
+    ORDER BY s.end_date DESC,
+             s.subscription_id DESC
+
+    LIMIT 1
+";
 
 
 $stmt = $conn->prepare($sql);
@@ -59,19 +459,22 @@ if (!$stmt) {
 
     die(
         "Database error: " .
-        htmlspecialchars($conn->error)
+        e($conn->error)
     );
 
 }
 
 $stmt->bind_param(
-    "i",
-    $owner_id
+    "iss",
+    $owner_id,
+    $today,
+    $today
 );
 
 $stmt->execute();
 
-$result = $stmt->get_result();
+$result =
+    $stmt->get_result();
 
 $current_subscription =
     $result->fetch_assoc();
@@ -81,35 +484,111 @@ $stmt->close();
 
 /*
 |--------------------------------------------------------------------------
-| Get all available subscription plans
+| GET UPCOMING SCHEDULED SUBSCRIPTION
+|--------------------------------------------------------------------------
+|
+| Only future scheduled subscriptions are shown.
+|
+| The earliest start date is the next subscription.
+|
+*/
+
+$upcoming_subscription = null;
+
+$sql = "
+    SELECT
+
+        s.subscription_id,
+        s.subscription_plan_id,
+        s.start_date,
+        s.end_date,
+        s.status,
+        s.created_at,
+
+        sp.plan_name,
+        sp.price,
+        sp.member_limit
+
+    FROM gym_owner_subscriptions s
+
+    INNER JOIN subscription_plans sp
+        ON s.subscription_plan_id =
+           sp.subscription_plan_id
+
+    WHERE s.owner_id = ?
+
+    AND s.status = 'scheduled'
+
+    AND s.start_date > ?
+
+    ORDER BY s.start_date ASC,
+             s.subscription_id ASC
+
+    LIMIT 1
+";
+
+
+$stmt = $conn->prepare($sql);
+
+if (!$stmt) {
+
+    die(
+        "Database error: " .
+        e($conn->error)
+    );
+
+}
+
+$stmt->bind_param(
+    "is",
+    $owner_id,
+    $today
+);
+
+$stmt->execute();
+
+$result =
+    $stmt->get_result();
+
+$upcoming_subscription =
+    $result->fetch_assoc();
+
+$stmt->close();
+
+
+/*
+|--------------------------------------------------------------------------
+| GET AVAILABLE PLANS
 |--------------------------------------------------------------------------
 */
 
-$sql = "SELECT
+$plans = [];
 
-            subscription_plan_id,
-            plan_name,
-            price,
-            member_limit
+$sql = "
+    SELECT
 
-        FROM subscription_plans
+        subscription_plan_id,
+        plan_name,
+        price,
+        member_limit
 
-        ORDER BY price ASC";
+    FROM subscription_plans
 
+    ORDER BY price ASC,
+             subscription_plan_id ASC
+";
 
-$result = $conn->query($sql);
+$result =
+    $conn->query($sql);
 
 if (!$result) {
 
     die(
         "Database error: " .
-        htmlspecialchars($conn->error)
+        e($conn->error)
     );
 
 }
-
-
-$plans = [];
 
 while ($row = $result->fetch_assoc()) {
 
@@ -120,24 +599,22 @@ while ($row = $result->fetch_assoc()) {
 
 /*
 |--------------------------------------------------------------------------
-| Current member count
+| GET TOTAL MEMBERS
 |--------------------------------------------------------------------------
-|
-| Used to show how many members the gym owner currently has.
-|
 */
 
 $total_members = 0;
 
-$sql = "SELECT COUNT(*) AS total
+$sql = "
+    SELECT COUNT(*) AS total
 
-        FROM members m
+    FROM members m
 
-        INNER JOIN gyms g
-            ON m.gym_id = g.gym_id
+    INNER JOIN gyms g
+        ON m.gym_id = g.gym_id
 
-        WHERE g.owner_id = ?";
-
+    WHERE g.owner_id = ?
+";
 
 $stmt = $conn->prepare($sql);
 
@@ -166,19 +643,27 @@ if ($stmt) {
 
 /*
 |--------------------------------------------------------------------------
-| Calculate subscription progress
+| CURRENT PLAN CALCULATIONS
 |--------------------------------------------------------------------------
 */
 
 $member_limit = null;
+
 $member_percentage = 0;
+
+$remaining_days = null;
+
 
 if ($current_subscription) {
 
+    /*
+    |--------------------------------------------------------------------------
+    | Member limit
+    |--------------------------------------------------------------------------
+    */
+
     if (
-        $current_subscription[
-            "member_limit"
-        ] !== null
+        $current_subscription["member_limit"] !== null
     ) {
 
         $member_limit =
@@ -190,8 +675,10 @@ if ($current_subscription) {
         if ($member_limit > 0) {
 
             $member_percentage =
-                ($total_members /
-                 $member_limit) * 100;
+                (
+                    $total_members /
+                    $member_limit
+                ) * 100;
 
             if ($member_percentage > 100) {
 
@@ -203,41 +690,44 @@ if ($current_subscription) {
 
     }
 
-}
 
+    /*
+    |--------------------------------------------------------------------------
+    | Remaining days
+    |--------------------------------------------------------------------------
+    */
 
-/*
-|--------------------------------------------------------------------------
-| Calculate remaining days
-|--------------------------------------------------------------------------
-*/
+    try {
 
-$remaining_days = null;
+        $today_date =
+            new DateTime($today);
 
-if ($current_subscription) {
+        $end_date =
+            new DateTime(
+                $current_subscription[
+                    "end_date"
+                ]
+            );
 
-    $today =
-        new DateTime(
-            date("Y-m-d")
-        );
+        if ($end_date >= $today_date) {
 
-    $end_date =
-        new DateTime(
-            $current_subscription[
-                "end_date"
-            ]
-        );
+            $remaining_days =
+                $today_date->diff(
+                    $end_date
+                )->days + 1;
 
-    if ($end_date >= $today) {
+        }
+        else {
 
-        $remaining_days =
-            $today->diff(
-                $end_date
-            )->days;
+            $remaining_days = 0;
 
-    } else {
+        }
 
-        $remaining_days = 0;
+    }
+
+    catch (Exception $e) {
+
+        $remaining_days = null;
 
     }
 
@@ -246,48 +736,162 @@ if ($current_subscription) {
 
 /*
 |--------------------------------------------------------------------------
-| Status class
+| CURRENT STATUS
 |--------------------------------------------------------------------------
 */
 
-$status_class = "";
+$status_class = "status-default";
 
 if ($current_subscription) {
 
     $status =
         strtolower(
-            $current_subscription[
-                "status"
-            ]
+            $current_subscription["status"]
         );
 
-    if ($status === "active") {
+    switch ($status) {
 
-        $status_class =
-            "status-active";
+        case "active":
+
+            $status_class =
+                "status-active";
+
+            break;
+
+        case "expired":
+
+            $status_class =
+                "status-expired";
+
+            break;
+
+        case "cancelled":
+
+            $status_class =
+                "status-cancelled";
+
+            break;
+
+    }
+
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| UPCOMING PLAN MEMBER WARNING
+|--------------------------------------------------------------------------
+*/
+
+$upcoming_member_warning = false;
+
+if (
+    $upcoming_subscription &&
+    $upcoming_subscription["member_limit"] !== null
+) {
+
+    $upcoming_limit =
+        (int)
+        $upcoming_subscription[
+            "member_limit"
+        ];
+
+    if (
+        $total_members >
+        $upcoming_limit
+    ) {
+
+        $upcoming_member_warning = true;
 
     }
 
-    elseif ($status === "expired") {
+}
 
-        $status_class =
-            "status-expired";
 
-    }
+/*
+|--------------------------------------------------------------------------
+| CAN RENEW?
+|--------------------------------------------------------------------------
+|
+| Renewal is allowed only when:
+|
+| - there is an active subscription
+| - there is no scheduled subscription
+|
+*/
 
-    elseif ($status === "cancelled") {
+$can_renew = false;
 
-        $status_class =
-            "status-cancelled";
+if (
+    $current_subscription &&
+    !$upcoming_subscription
+) {
 
-    }
+    $can_renew = true;
 
-    else {
+}
 
-        $status_class =
-            "status-default";
 
-    }
+/*
+|--------------------------------------------------------------------------
+| CAN CHANGE PLAN?
+|--------------------------------------------------------------------------
+|
+| A new plan can only be scheduled when:
+|
+| - there is an active subscription
+| - no other scheduled plan exists
+|
+*/
+
+$can_change_plan = false;
+
+if (
+    $current_subscription &&
+    !$upcoming_subscription
+) {
+
+    $can_change_plan = true;
+
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| SUBSCRIPTION HISTORY
+|--------------------------------------------------------------------------
+*/
+
+$has_subscription_history = false;
+
+$sql = "
+    SELECT subscription_id
+
+    FROM gym_owner_subscriptions
+
+    WHERE owner_id = ?
+
+    LIMIT 1
+";
+
+$stmt = $conn->prepare($sql);
+
+if ($stmt) {
+
+    $stmt->bind_param(
+        "i",
+        $owner_id
+    );
+
+    $stmt->execute();
+
+    $result =
+        $stmt->get_result();
+
+    $has_subscription_history =
+        $result->num_rows > 0;
+
+    $stmt->close();
 
 }
 
@@ -365,7 +969,7 @@ if ($current_subscription) {
 
             margin: 0;
 
-            font-size: 28px;
+            font-size: 30px;
 
         }
 
@@ -400,7 +1004,7 @@ if ($current_subscription) {
 
         .back:hover {
 
-            opacity: 0.85;
+            opacity: .9;
 
         }
 
@@ -411,7 +1015,7 @@ if ($current_subscription) {
 
             background: white;
 
-            border-radius: 12px;
+            border-radius: 14px;
 
             padding: 25px;
 
@@ -419,7 +1023,7 @@ if ($current_subscription) {
 
             box-shadow:
                 0 3px 12px
-                rgba(0,0,0,0.06);
+                rgba(0,0,0,.06);
 
         }
 
@@ -428,10 +1032,19 @@ if ($current_subscription) {
 
             margin-top: 0;
 
+            margin-bottom: 8px;
+
         }
 
 
-        /* CURRENT SUBSCRIPTION */
+        .muted {
+
+            color: #6b7280;
+
+        }
+
+
+        /* CURRENT */
 
         .current-plan {
 
@@ -441,6 +1054,8 @@ if ($current_subscription) {
                 1fr 1fr;
 
             gap: 25px;
+
+            margin-top: 20px;
 
         }
 
@@ -460,7 +1075,9 @@ if ($current_subscription) {
 
             color: #6b7280;
 
-            font-size: 14px;
+            font-size: 13px;
+
+            font-weight: bold;
 
             margin-bottom: 8px;
 
@@ -480,11 +1097,11 @@ if ($current_subscription) {
 
         .price {
 
-            font-size: 24px;
+            font-size: 25px;
 
             font-weight: bold;
 
-            margin-bottom: 20px;
+            margin-bottom: 18px;
 
         }
 
@@ -493,9 +1110,9 @@ if ($current_subscription) {
 
             font-size: 14px;
 
-            font-weight: normal;
-
             color: #6b7280;
+
+            font-weight: normal;
 
         }
 
@@ -575,7 +1192,7 @@ if ($current_subscription) {
 
             padding: 15px;
 
-            border-radius: 8px;
+            border-radius: 9px;
 
         }
 
@@ -598,7 +1215,7 @@ if ($current_subscription) {
         }
 
 
-        /* MEMBER USAGE */
+        /* USAGE */
 
         .usage {
 
@@ -615,8 +1232,6 @@ if ($current_subscription) {
                 space-between;
 
             margin-bottom: 8px;
-
-            font-size: 14px;
 
         }
 
@@ -644,6 +1259,8 @@ if ($current_subscription) {
 
             border-radius: 20px;
 
+            transition: width .3s ease;
+
         }
 
 
@@ -656,17 +1273,17 @@ if ($current_subscription) {
         }
 
 
-        /* ACTIONS */
+        /* BUTTONS */
 
         .actions {
-
-            margin-top: 25px;
 
             display: flex;
 
             gap: 10px;
 
             flex-wrap: wrap;
+
+            margin-top: 25px;
 
         }
 
@@ -683,7 +1300,7 @@ if ($current_subscription) {
 
             font-weight: bold;
 
-            color: white;
+            border: none;
 
         }
 
@@ -692,6 +1309,8 @@ if ($current_subscription) {
 
             background: #2563eb;
 
+            color: white;
+
         }
 
 
@@ -699,42 +1318,170 @@ if ($current_subscription) {
 
             background: #16a34a;
 
+            color: white;
+
+        }
+
+
+        .button-gray {
+
+            background: #e5e7eb;
+
+            color: #374151;
+
         }
 
 
         .button:hover {
 
-            opacity: 0.85;
+            opacity: .88;
 
         }
 
 
-        /* NO SUBSCRIPTION */
+        /* NOTICE */
 
-        .no-subscription {
+        .notice {
 
-            text-align: center;
+            padding: 15px;
 
-            padding: 35px;
+            border-radius: 9px;
 
-        }
+            margin-top: 20px;
 
-
-        .no-subscription h2 {
-
-            margin-bottom: 10px;
+            line-height: 1.5;
 
         }
 
 
-        .no-subscription p {
+        .notice-warning {
+
+            background: #fffbeb;
+
+            border: 1px solid #fde68a;
+
+            color: #92400e;
+
+        }
+
+
+        .notice-danger {
+
+            background: #fee2e2;
+
+            border: 1px solid #fecaca;
+
+            color: #991b1b;
+
+        }
+
+
+        .notice-info {
+
+            background: #eff6ff;
+
+            border: 1px solid #bfdbfe;
+
+            color: #1e40af;
+
+        }
+
+
+        /* UPCOMING */
+
+        .upcoming {
+
+            background: #eff6ff;
+
+            border: 1px solid #bfdbfe;
+
+            border-radius: 12px;
+
+            padding: 20px;
+
+        }
+
+
+        .upcoming-header {
+
+            display: flex;
+
+            justify-content:
+                space-between;
+
+            align-items: center;
+
+            margin-bottom: 18px;
+
+        }
+
+
+        .upcoming-header h3 {
+
+            margin: 0;
+
+        }
+
+
+        .scheduled {
+
+            background: #dbeafe;
+
+            color: #1d4ed8;
+
+            padding: 6px 10px;
+
+            border-radius: 20px;
+
+            font-size: 11px;
+
+            font-weight: bold;
+
+        }
+
+
+        .upcoming-grid {
+
+            display: grid;
+
+            grid-template-columns:
+                repeat(5, 1fr);
+
+            gap: 12px;
+
+        }
+
+
+        .upcoming-item {
+
+            background: white;
+
+            padding: 14px;
+
+            border-radius: 8px;
+
+        }
+
+
+        .upcoming-label {
 
             color: #6b7280;
 
+            font-size: 12px;
+
+            margin-bottom: 5px;
+
         }
 
 
-        /* AVAILABLE PLANS */
+        .upcoming-value {
+
+            font-weight: bold;
+
+        }
+
+
+        /* PLANS */
 
         .plans {
 
@@ -744,6 +1491,8 @@ if ($current_subscription) {
                 repeat(4, 1fr);
 
             gap: 20px;
+
+            margin-top: 20px;
 
         }
 
@@ -760,33 +1509,64 @@ if ($current_subscription) {
 
             flex-direction: column;
 
+            min-height: 250px;
+
         }
 
 
         .plan-card.current {
 
-            border: 2px solid #2563eb;
+            border:
+                2px solid #2563eb;
+
+            background: #f8fbff;
 
         }
 
 
-        .current-label {
+        .plan-card.upcoming {
+
+            border:
+                2px solid #60a5fa;
+
+            background: #eff6ff;
+
+        }
+
+
+        .plan-badge {
 
             display: inline-block;
 
-            background: #dbeafe;
-
-            color: #1d4ed8;
+            width: fit-content;
 
             padding: 5px 9px;
 
-            border-radius: 15px;
+            border-radius: 20px;
 
             font-size: 11px;
 
             font-weight: bold;
 
-            margin-bottom: 10px;
+            margin-bottom: 12px;
+
+        }
+
+
+        .badge-current {
+
+            background: #dbeafe;
+
+            color: #1d4ed8;
+
+        }
+
+
+        .badge-upcoming {
+
+            background: #e0f2fe;
+
+            color: #0369a1;
 
         }
 
@@ -840,39 +1620,37 @@ if ($current_subscription) {
         }
 
 
-        .current-button {
+        /* EMPTY */
 
-            background: #9ca3af;
+        .empty {
 
-            cursor: default;
+            text-align: center;
 
-        }
-
-
-        /* NOTICE */
-
-        .notice {
-
-            background: #fffbeb;
-
-            border: 1px solid #fde68a;
-
-            color: #92400e;
-
-            padding: 15px;
-
-            border-radius: 8px;
-
-            margin-top: 20px;
+            padding: 40px 20px;
 
         }
 
 
-        /* MOBILE */
+        .empty h2 {
 
-        @media (max-width: 1000px) {
+            margin-bottom: 10px;
+
+        }
+
+
+        /* RESPONSIVE */
+
+        @media (max-width: 1050px) {
 
             .plans {
+
+                grid-template-columns:
+                    repeat(2, 1fr);
+
+            }
+
+
+            .upcoming-grid {
 
                 grid-template-columns:
                     repeat(2, 1fr);
@@ -904,21 +1682,32 @@ if ($current_subscription) {
 
             .current-plan {
 
-                grid-template-columns:
-                    1fr;
+                grid-template-columns: 1fr;
+
+            }
+
+
+            .details {
+
+                grid-template-columns: 1fr;
 
             }
 
 
             .plans {
 
-                grid-template-columns:
-                    1fr;
+                grid-template-columns: 1fr;
+
+            }
+
+
+            .upcoming-grid {
+
+                grid-template-columns: 1fr;
 
             }
 
         }
-
 
     </style>
 
@@ -952,9 +1741,7 @@ if ($current_subscription) {
             href="dashboard.php"
             class="back"
         >
-
             ← Dashboard
-
         </a>
 
     </div>
@@ -965,10 +1752,13 @@ if ($current_subscription) {
 
     <div class="card">
 
-
         <h2>
             Current Subscription
         </h2>
+
+        <p class="muted">
+            Your currently active subscription and usage.
+        </p>
 
 
         <?php if ($current_subscription): ?>
@@ -977,25 +1767,21 @@ if ($current_subscription) {
             <div class="current-plan">
 
 
-                <!-- PLAN -->
+                <!-- PLAN SUMMARY -->
 
                 <div class="plan-main">
 
                     <div class="plan-label">
-                        Your Current Plan
+                        CURRENT PLAN
                     </div>
 
 
                     <div class="plan-name">
 
                         <?php
-
-                        echo htmlspecialchars(
-                            $current_subscription[
-                                "plan_name"
-                            ]
+                        echo e(
+                            $current_subscription["plan_name"]
                         );
-
                         ?>
 
                     </div>
@@ -1004,16 +1790,10 @@ if ($current_subscription) {
                     <div class="price">
 
                         Rs.
-
                         <?php
-
-                        echo number_format(
-                            $current_subscription[
-                                "price"
-                            ],
-                            2
+                        echo format_price(
+                            $current_subscription["price"]
                         );
-
                         ?>
 
                         <span>
@@ -1024,38 +1804,32 @@ if ($current_subscription) {
 
 
                     <span
-                        class="status <?php echo $status_class; ?>"
+                        class="status <?php echo e($status_class); ?>"
                     >
-
                         <?php
-
-                        echo htmlspecialchars(
-                            $current_subscription[
-                                "status"
-                            ]
+                        echo e(
+                            $current_subscription["status"]
                         );
-
                         ?>
-
                     </span>
 
 
                     <div class="actions">
 
-                        <?php if (
-                            strtolower(
-                                $current_subscription[
-                                    "status"
-                                ]
-                            ) === "active"
-                        ): ?>
+
+                        <?php if ($can_change_plan): ?>
 
                             <a
-                                href="subscription_plans.php"
+                                href="#available-plans"
                                 class="button button-primary"
                             >
                                 Change Plan
                             </a>
+
+                        <?php endif; ?>
+
+
+                        <?php if ($can_renew): ?>
 
                             <a
                                 href="subscription_renew.php"
@@ -1064,18 +1838,26 @@ if ($current_subscription) {
                                 Renew Subscription
                             </a>
 
-                        <?php else: ?>
-
-                            <a
-                                href="subscription_plans.php"
-                                class="button button-primary"
-                            >
-                                Choose a Plan
-                            </a>
-
                         <?php endif; ?>
 
+
                     </div>
+
+
+                    <?php if ($upcoming_subscription): ?>
+
+                        <div class="notice notice-info">
+
+                            You already have an upcoming
+                            subscription scheduled.
+
+                            Your current plan will remain active
+                            until its expiry date.
+
+                        </div>
+
+                    <?php endif; ?>
+
 
                 </div>
 
@@ -1098,16 +1880,13 @@ if ($current_subscription) {
                             <div class="detail-value">
 
                                 <?php
-
-                                echo date(
-                                    "d M Y",
-                                    strtotime(
+                                echo e(
+                                    format_date(
                                         $current_subscription[
                                             "start_date"
                                         ]
                                     )
                                 );
-
                                 ?>
 
                             </div>
@@ -1124,16 +1903,13 @@ if ($current_subscription) {
                             <div class="detail-value">
 
                                 <?php
-
-                                echo date(
-                                    "d M Y",
-                                    strtotime(
+                                echo e(
+                                    format_date(
                                         $current_subscription[
                                             "end_date"
                                         ]
                                     )
                                 );
-
                                 ?>
 
                             </div>
@@ -1155,7 +1931,9 @@ if ($current_subscription) {
                                     $remaining_days !== null
                                 ) {
 
-                                    echo $remaining_days;
+                                    echo number_format(
+                                        $remaining_days
+                                    );
 
                                     echo
                                         $remaining_days === 1
@@ -1189,7 +1967,9 @@ if ($current_subscription) {
                                     $member_limit !== null
                                 ) {
 
-                                    echo $member_limit;
+                                    echo number_format(
+                                        $member_limit
+                                    );
 
                                 } else {
 
@@ -1214,7 +1994,8 @@ if ($current_subscription) {
 
 
                         <?php if (
-                            $member_limit !== null
+                            $member_limit !== null &&
+                            $member_limit > 0
                         ): ?>
 
 
@@ -1227,17 +2008,17 @@ if ($current_subscription) {
                                 <strong>
 
                                     <?php
-
-                                    echo $total_members;
-
+                                    echo number_format(
+                                        $total_members
+                                    );
                                     ?>
 
                                     /
 
                                     <?php
-
-                                    echo $member_limit;
-
+                                    echo number_format(
+                                        $member_limit
+                                    );
                                     ?>
 
                                 </strong>
@@ -1249,7 +2030,7 @@ if ($current_subscription) {
 
                                 <div
                                     class="progress-bar"
-                                    style="width: <?php echo $member_percentage; ?>%;"
+                                    style="width: <?php echo (float) $member_percentage; ?>%;"
                                 ></div>
 
                             </div>
@@ -1260,25 +2041,59 @@ if ($current_subscription) {
                                 $member_limit
                             ): ?>
 
-                                <div class="notice">
 
-                                    Your gym has reached the
-                                    member limit for this plan.
-                                    Upgrade your subscription to
-                                    add more members.
+                                <div class="notice notice-danger">
+
+                                    <strong>
+                                        Member limit reached.
+                                    </strong>
+
+                                    Your gym currently has
+
+                                    <?php
+                                    echo number_format(
+                                        $total_members
+                                    );
+                                    ?>
+
+                                    members, which is at or above
+                                    your plan limit.
 
                                 </div>
+
 
                             <?php elseif (
                                 $member_percentage >= 80
                             ): ?>
 
-                                <div class="notice">
 
-                                    You are approaching your
-                                    plan's member limit.
+                                <div class="notice notice-warning">
+
+                                    <strong>
+                                        You are approaching your
+                                        member limit.
+                                    </strong>
+
+                                    You are currently using
+
+                                    <?php
+                                    echo number_format(
+                                        $total_members
+                                    );
+                                    ?>
+
+                                    of
+
+                                    <?php
+                                    echo number_format(
+                                        $member_limit
+                                    );
+                                    ?>
+
+                                    available member slots.
 
                                 </div>
+
 
                             <?php endif; ?>
 
@@ -1308,28 +2123,48 @@ if ($current_subscription) {
         <?php else: ?>
 
 
-            <div class="no-subscription">
+            <div class="empty">
 
                 <h2>
                     No Active Subscription
                 </h2>
 
-                <p>
-                    You do not currently have a subscription.
-                    Choose a plan below to get started.
+                <p class="muted">
+
+                    You currently do not have an active
+                    subscription.
+
+                    <?php if (
+                        $upcoming_subscription
+                    ): ?>
+
+                        Your next scheduled plan is shown below.
+
+                    <?php else: ?>
+
+                        Choose a plan below to get started.
+
+                    <?php endif; ?>
+
                 </p>
 
 
-                <div class="actions">
+                <?php if (
+                    !$upcoming_subscription
+                ): ?>
 
-                    <a
-                        href="#available-plans"
-                        class="button button-primary"
-                    >
-                        View Available Plans
-                    </a>
+                    <div class="actions">
 
-                </div>
+                        <a
+                            href="#available-plans"
+                            class="button button-primary"
+                        >
+                            View Available Plans
+                        </a>
+
+                    </div>
+
+                <?php endif; ?>
 
             </div>
 
@@ -1341,6 +2176,287 @@ if ($current_subscription) {
 
 
 
+    <!-- UPCOMING SUBSCRIPTION -->
+
+    <?php if ($upcoming_subscription): ?>
+
+
+        <div class="card">
+
+
+            <h2>
+                Upcoming Subscription
+            </h2>
+
+
+            <p class="muted">
+
+                This plan will automatically become active
+                after your current subscription ends.
+
+            </p>
+
+
+            <div class="upcoming">
+
+
+                <div class="upcoming-header">
+
+                    <h3>
+
+                        <?php
+                        echo e(
+                            $upcoming_subscription[
+                                "plan_name"
+                            ]
+                        );
+                        ?>
+
+                    </h3>
+
+
+                    <span class="scheduled">
+                        SCHEDULED
+                    </span>
+
+                </div>
+
+
+                <div class="upcoming-grid">
+
+
+                    <div class="upcoming-item">
+
+                        <div class="upcoming-label">
+                            Price
+                        </div>
+
+                        <div class="upcoming-value">
+
+                            Rs.
+
+                            <?php
+                            echo format_price(
+                                $upcoming_subscription[
+                                    "price"
+                                ]
+                            );
+                            ?>
+
+                            / month
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="upcoming-item">
+
+                        <div class="upcoming-label">
+                            Starts
+                        </div>
+
+                        <div class="upcoming-value">
+
+                            <?php
+                            echo e(
+                                format_date(
+                                    $upcoming_subscription[
+                                        "start_date"
+                                    ]
+                                )
+                            );
+                            ?>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="upcoming-item">
+
+                        <div class="upcoming-label">
+                            Ends
+                        </div>
+
+                        <div class="upcoming-value">
+
+                            <?php
+                            echo e(
+                                format_date(
+                                    $upcoming_subscription[
+                                        "end_date"
+                                    ]
+                                )
+                            );
+                            ?>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="upcoming-item">
+
+                        <div class="upcoming-label">
+                            Member Limit
+                        </div>
+
+                        <div class="upcoming-value">
+
+                            <?php
+
+                            if (
+                                $upcoming_subscription[
+                                    "member_limit"
+                                ] !== null
+                            ) {
+
+                                echo number_format(
+                                    (int)
+                                    $upcoming_subscription[
+                                        "member_limit"
+                                    ]
+                                );
+
+                            } else {
+
+                                echo "Unlimited";
+
+                            }
+
+                            ?>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="upcoming-item">
+
+                        <div class="upcoming-label">
+                            Current Members
+                        </div>
+
+                        <div class="upcoming-value">
+
+                            <?php
+                            echo number_format(
+                                $total_members
+                            );
+                            ?>
+
+                        </div>
+
+                    </div>
+
+
+                </div>
+
+
+                <?php if (
+                    $upcoming_member_warning
+                ): ?>
+
+
+                    <div class="notice notice-danger">
+
+                        <strong>
+                            Action may be required before
+                            this plan starts.
+                        </strong>
+
+                        <br><br>
+
+                        Your gym currently has
+
+                        <strong>
+                            <?php
+                            echo number_format(
+                                $total_members
+                            );
+                            ?>
+                        </strong>
+
+                        members, but your upcoming plan allows
+                        only
+
+                        <strong>
+                            <?php
+                            echo number_format(
+                                (int)
+                                $upcoming_subscription[
+                                    "member_limit"
+                                ]
+                            );
+                            ?>
+                        </strong>
+
+                        members.
+
+                        You may need to reduce your member count
+                        or choose a higher plan before the new
+                        subscription becomes active.
+
+                    </div>
+
+
+                <?php else: ?>
+
+
+                    <div class="notice notice-info">
+
+                        <?php if ($current_subscription): ?>
+
+    Your current subscription will remain
+    active until
+
+    <strong>
+        <?php
+        echo e(
+            format_date(
+                $current_subscription["end_date"]
+            )
+        );
+        ?>
+    </strong>.
+
+    The scheduled plan will then
+    automatically become active.
+
+<?php else: ?>
+
+    Your scheduled subscription will
+    become active on
+
+    <strong>
+        <?php
+        echo e(
+            format_date(
+                $upcoming_subscription["start_date"]
+            )
+        );
+        ?>
+    </strong>.
+
+<?php endif; ?>
+
+                    </div>
+
+
+                <?php endif; ?>
+
+
+            </div>
+
+
+        </div>
+
+
+    <?php endif; ?>
+
+
+
     <!-- AVAILABLE PLANS -->
 
     <div
@@ -1348,20 +2464,38 @@ if ($current_subscription) {
         id="available-plans"
     >
 
+
         <h2>
             Available Subscription Plans
         </h2>
 
-        <p style="color:#6b7280;">
 
-            Choose the plan that best fits your gym.
+        <p class="muted">
+
+            <?php if (
+                $current_subscription
+            ): ?>
+
+                Your current plan remains active until its
+                expiry date. Any new plan you select will
+                start afterward.
+
+            <?php elseif (
+                $upcoming_subscription
+            ): ?>
+
+                You already have a subscription scheduled.
+
+            <?php else: ?>
+
+                Choose the plan that best fits your gym.
+
+            <?php endif; ?>
 
         </p>
 
 
-        <?php if (
-            count($plans) > 0
-        ): ?>
+        <?php if (count($plans) > 0): ?>
 
 
             <div class="plans">
@@ -1374,25 +2508,53 @@ if ($current_subscription) {
 
                     <?php
 
-                    $is_current =
-                        $current_subscription &&
-                        (int)
-                        $current_subscription[
-                            "subscription_plan_id"
-                        ] ===
+                    $plan_id =
                         (int)
                         $plan[
                             "subscription_plan_id"
                         ];
+
+
+                    $is_current =
+                        $current_subscription &&
+                        (
+                            (int)
+                            $current_subscription[
+                                "subscription_plan_id"
+                            ]
+                            ===
+                            $plan_id
+                        );
+
+
+                    $is_upcoming =
+                        $upcoming_subscription &&
+                        (
+                            (int)
+                            $upcoming_subscription[
+                                "subscription_plan_id"
+                            ]
+                            ===
+                            $plan_id
+                        );
 
                     ?>
 
 
                     <div
                         class="plan-card <?php
-                            echo $is_current
-                                ? "current"
-                                : "";
+
+                            if ($is_current) {
+
+                                echo "current";
+
+                            }
+                            elseif ($is_upcoming) {
+
+                                echo "upcoming";
+
+                            }
+
                         ?>"
                     >
 
@@ -1401,11 +2563,25 @@ if ($current_subscription) {
                             $is_current
                         ): ?>
 
-                            <span class="current-label">
 
+                            <span
+                                class="plan-badge badge-current"
+                            >
                                 CURRENT PLAN
-
                             </span>
+
+
+                        <?php elseif (
+                            $is_upcoming
+                        ): ?>
+
+
+                            <span
+                                class="plan-badge badge-upcoming"
+                            >
+                                UPCOMING PLAN
+                            </span>
+
 
                         <?php endif; ?>
 
@@ -1413,13 +2589,9 @@ if ($current_subscription) {
                         <h3>
 
                             <?php
-
-                            echo htmlspecialchars(
-                                $plan[
-                                    "plan_name"
-                                ]
+                            echo e(
+                                $plan["plan_name"]
                             );
-
                             ?>
 
                         </h3>
@@ -1430,14 +2602,9 @@ if ($current_subscription) {
                             Rs.
 
                             <?php
-
-                            echo number_format(
-                                $plan[
-                                    "price"
-                                ],
-                                2
+                            echo format_price(
+                                $plan["price"]
                             );
-
                             ?>
 
                             <span>
@@ -1449,30 +2616,33 @@ if ($current_subscription) {
 
                         <div class="plan-limit">
 
+
                             <?php if (
-                                $plan[
-                                    "member_limit"
-                                ] !== null
+                                $plan["member_limit"]
+                                !== null
                             ): ?>
+
 
                                 Up to
 
                                 <strong>
 
                                     <?php
-
-                                    echo (int)
+                                    echo number_format(
+                                        (int)
                                         $plan[
                                             "member_limit"
-                                        ];
-
+                                        ]
+                                    );
                                     ?>
 
                                 </strong>
 
                                 members
 
+
                             <?php else: ?>
+
 
                                 <strong>
                                     Unlimited
@@ -1480,33 +2650,63 @@ if ($current_subscription) {
 
                                 members
 
+
                             <?php endif; ?>
 
+
                         </div>
+
 
 
                         <?php if (
                             $is_current
                         ): ?>
 
+
                             <span
-                                class="button current-button"
+                                class="button button-gray"
                             >
-
                                 Current Plan
-
                             </span>
 
-                        <?php else: ?>
+
+                        <?php elseif (
+                            $is_upcoming
+                        ): ?>
+
+
+                            <span
+                                class="button button-gray"
+                            >
+                                Already Scheduled
+                            </span>
+
+
+                        <?php elseif (
+                            $current_subscription
+                        ): ?>
+
 
                             <a
-                                href="subscription_change.php?plan_id=<?php echo (int)$plan["subscription_plan_id"]; ?>"
+                                href="subscription_change.php?plan_id=<?php echo $plan_id; ?>"
                                 class="button button-primary"
                             >
-
-                                Choose Plan
-
+                                Schedule Plan
                             </a>
+
+
+                        <?php elseif (
+                            !$upcoming_subscription
+                        ): ?>
+
+
+                            <a
+                                href="subscription_change.php?plan_id=<?php echo $plan_id; ?>"
+                                class="button button-primary"
+                            >
+                                Choose Plan
+                            </a>
+
 
                         <?php endif; ?>
 
@@ -1523,15 +2723,17 @@ if ($current_subscription) {
         <?php else: ?>
 
 
-            <div class="no-subscription">
+            <div class="empty">
 
                 <h3>
                     No Plans Available
                 </h3>
 
-                <p>
+                <p class="muted">
+
                     No subscription plans have been created
                     by the administrator yet.
+
                 </p>
 
             </div>
