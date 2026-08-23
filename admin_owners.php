@@ -360,6 +360,10 @@ $result = $conn->query($sql);
                             Registered
                         </th>
 
+                        <th>
+                            Action
+                        </th>
+
                     </tr>
 
                 </thead>
@@ -481,6 +485,25 @@ $result = $conn->query($sql);
                             ?>
 
                         </td>
+
+                        <td>
+
+    <a
+        href="admin_owner_details.php?id=<?php echo (int)$owner["owner_id"]; ?>"
+        style="
+            display:inline-block;
+            padding:8px 12px;
+            background:#111827;
+            color:white;
+            text-decoration:none;
+            border-radius:6px;
+            font-size:13px;
+        "
+    >
+        View Details
+    </a>
+
+</td>
 
 
                         <td class="date">
