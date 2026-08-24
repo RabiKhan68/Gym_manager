@@ -73,7 +73,6 @@ $sql = "
         p.subscription_plan_id,
         p.subscription_id,
         p.amount,
-        p.payment_date,
         p.payment_method,
         p.payment_status,
         p.transaction_reference,
@@ -1189,34 +1188,38 @@ while (
                             $display_date = null;
 
 
-                            if (
-                                !empty(
-                                    $payment[
-                                        "payment_date"
-                                    ]
-                                )
-                            ) {
+                            $display_date =
+    $payment["created_at"] ?? null;
 
-                                $display_date =
-                                    $payment[
-                                        "payment_date"
-                                    ];
 
-                            }
-                            elseif (
-                                !empty(
-                                    $payment[
-                                        "created_at"
-                                    ]
-                                )
-                            ) {
+if ($display_date) {
 
-                                $display_date =
-                                    $payment[
-                                        "created_at"
-                                    ];
+    $timestamp =
+        strtotime($display_date);
 
-                            }
+
+    if ($timestamp) {
+
+        echo e(
+            date(
+                "d M Y h:i A",
+                $timestamp
+            )
+        );
+
+    }
+    else {
+
+        echo "-";
+
+    }
+
+}
+else {
+
+    echo "-";
+
+}
 
 
                             if ($display_date) {
