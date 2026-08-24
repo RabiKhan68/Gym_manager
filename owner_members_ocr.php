@@ -6,8 +6,10 @@ require_once __DIR__ . "/backend/db.php";
 require_once __DIR__ . "/vendor/autoload.php";
 
 use Google\Cloud\Vision\V1\Client\ImageAnnotatorClient;
+use Google\Cloud\Vision\V1\AnnotateImageRequest;
+use Google\Cloud\Vision\V1\Image;
+use Google\Cloud\Vision\V1\Feature;
 use Google\Cloud\Vision\V1\Feature\Type;
-
 
 /*
 |--------------------------------------------------------------------------
@@ -588,31 +590,130 @@ if (
                                 |--------------------------------------------------------------------------
                                 */
 
-                                $response =
-                                    $vision->documentTextDetection(
-                                        $image_data
-                                    );
-
-
                                 /*
-                                |--------------------------------------------------------------------------
-                                | Get full OCR text
-                                |--------------------------------------------------------------------------
-                                */
+|--------------------------------------------------------------------------
+| Create Vision Image
+|--------------------------------------------------------------------------
+*/
 
-                                $annotation =
-                                    $response->getFullTextAnnotation();
+$image =
+    new Image();
+
+$image->setContent(
+    $image_data
+);
 
 
-                                if (
-                                    $annotation
-                                ) {
+/*
+|--------------------------------------------------------------------------
+| Create OCR Feature
+|--------------------------------------------------------------------------
+*/
 
-                                    $ocr_text =
-                                        $annotation->getText();
+$feature =
+    new Feature();
 
-                                }
+$feature->setType(
+    Type::DOCUMENT_TEXT_DETECTION
+);
 
+
+/*
+|--------------------------------------------------------------------------
+| Create Annotation Request
+|--------------------------------------------------------------------------
+*/
+
+$request =
+    new AnnotateImageRequest();
+
+$request->setImage(
+    $image
+);
+
+$request->setFeatures([
+    $feature
+]);
+
+
+/*
+|--------------------------------------------------------------------------
+| Send OCR request
+|--------------------------------------------------------------------------
+*/
+
+$response =
+    $vision->batchAnnotateImages([
+        $request
+]);
+
+
+/*
+|--------------------------------------------------------------------------
+| Get first image response
+|--------------------------------------------------------------------------
+*/
+
+$responses =
+    $response->getResponses();
+
+
+if (
+    count($responses) === 0
+) {
+
+    throw new Exception(
+        "Google Vision returned no response."
+    );
+
+}
+
+
+$annotation_response =
+    $responses[0];
+
+
+/*
+|--------------------------------------------------------------------------
+| Check Google Vision error
+|--------------------------------------------------------------------------
+*/
+
+$vision_error =
+    $annotation_response->getError();
+
+
+if (
+    $vision_error &&
+    $vision_error->getMessage() !== ""
+) {
+
+    throw new Exception(
+        "Google Vision error: " .
+        $vision_error->getMessage()
+    );
+
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| Get full OCR text
+|--------------------------------------------------------------------------
+*/
+
+$full_text_annotation =
+    $annotation_response->getFullTextAnnotation();
+
+
+if (
+    $full_text_annotation
+) {
+
+    $ocr_text =
+        $full_text_annotation->getText();
+
+}
 
                                 /*
                                 |--------------------------------------------------------------------------
