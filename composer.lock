@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "593586b4b40dff4c4aaf27471bcd8ed4",
+    "content-hash": "0d007e6f98d539c9da60d779ee5a3ffb",
     "packages": [
         {
             "name": "bacon/bacon-qr-code",
@@ -516,31 +516,31 @@
         },
         {
             "name": "google/cloud-vision",
-            "version": "v2.0.0",
+            "version": "v2.3.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/googleapis/google-cloud-php-vision.git",
-                "reference": "80fa846363f48e97cce79fe7b579fd1316a6ef98"
+                "reference": "38847a19c284f51b2daaf7127061922051a450bb"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/googleapis/google-cloud-php-vision/zipball/80fa846363f48e97cce79fe7b579fd1316a6ef98",
-                "reference": "80fa846363f48e97cce79fe7b579fd1316a6ef98",
+                "url": "https://api.github.com/repos/googleapis/google-cloud-php-vision/zipball/38847a19c284f51b2daaf7127061922051a450bb",
+                "reference": "38847a19c284f51b2daaf7127061922051a450bb",
                 "shasum": ""
             },
             "require": {
                 "google/cloud-core": "^1.57",
-                "google/gax": "^1.36.0",
-                "php": "^8.0"
+                "google/gax": "^1.38.0",
+                "php": "^8.1"
             },
             "require-dev": {
                 "erusev/parsedown": "^1.6",
-                "google/cloud-storage": "^1.12",
+                "google/cloud-storage": "^2.0",
                 "phpdocumentor/reflection": "^5.3.3||^6.0",
-                "phpdocumentor/reflection-docblock": "^5.3",
+                "phpdocumentor/reflection-docblock": "^5.3.3||^6.0",
                 "phpspec/prophecy-phpunit": "^2.0",
                 "phpunit/phpunit": "^9.0",
-                "squizlabs/php_codesniffer": "2.*"
+                "squizlabs/php_codesniffer": "3.*"
             },
             "suggest": {
                 "ext-grpc": "The gRPC extension enables use of the performant gRPC transport",
@@ -568,9 +568,9 @@
             ],
             "description": "Cloud Vision Client for PHP",
             "support": {
-                "source": "https://github.com/googleapis/google-cloud-php-vision/tree/v2.0.0"
+                "source": "https://github.com/googleapis/google-cloud-php-vision/tree/v2.3.0"
             },
-            "time": "2025-02-08T00:05:17+00:00"
+            "time": "2026-08-10T16:39:50+00:00"
         },
         {
             "name": "google/common-protos",
