@@ -7,9 +7,11 @@ namespace Composer\Autoload;
 class ComposerStaticInit5726834464b54df5c26cde494ec31af2
 {
     public static $files = array (
+        'a4a119a56e50fbb293281d9a48007e0e' => __DIR__ . '/..' . '/symfony/polyfill-php80/bootstrap.php',
+        '5897ea0ac4cccf14d323035e65887801' => __DIR__ . '/..' . '/symfony/polyfill-php82/bootstrap.php',
+        'e39a8b23c42d4e1452234d762b03835a' => __DIR__ . '/..' . '/ramsey/uuid/src/functions.php',
         '320cde22f66dd4f5d3fd621d3e88b98f' => __DIR__ . '/..' . '/symfony/polyfill-ctype/bootstrap.php',
         '0e6d7bf4a5811bfa5cf40c5ccd6fae6a' => __DIR__ . '/..' . '/symfony/polyfill-mbstring/bootstrap.php',
-        'a4a119a56e50fbb293281d9a48007e0e' => __DIR__ . '/..' . '/symfony/polyfill-php80/bootstrap.php',
     );
 
     public static $prefixLengthsPsr4 = array (
@@ -19,23 +21,65 @@ class ComposerStaticInit5726834464b54df5c26cde494ec31af2
         ),
         'S' =>
         array (
+            'Symfony\\Polyfill\\Php82\\' => 23,
             'Symfony\\Polyfill\\Php80\\' => 23,
             'Symfony\\Polyfill\\Mbstring\\' => 26,
             'Symfony\\Polyfill\\Ctype\\' => 23,
         ),
+        'R' =>
+        array (
+            'Rize\\' => 5,
+            'Ramsey\\Uuid\\' => 12,
+            'Ramsey\\Collection\\' => 18,
+        ),
         'P' =>
         array (
             'Psr\\SimpleCache\\' => 16,
+            'Psr\\Log\\' => 8,
+            'Psr\\Http\\Message\\' => 17,
+            'Psr\\Http\\Client\\' => 16,
+            'Psr\\Cache\\' => 10,
             'PhpOption\\' => 10,
             'PhpOffice\\PhpSpreadsheet\\' => 25,
         ),
         'M' =>
         array (
+            'Monolog\\' => 8,
             'Matrix\\' => 7,
         ),
         'G' =>
         array (
+            'GuzzleHttp\\Psr7\\' => 16,
+            'GuzzleHttp\\Promise\\' => 19,
+            'GuzzleHttp\\' => 11,
+            'Grpc\\Gcp\\' => 9,
+            'Grpc\\' => 5,
             'GrahamCampbell\\ResultType\\' => 26,
+            'Google\\Type\\' => 12,
+            'Google\\Rpc\\' => 11,
+            'Google\\Protobuf\\' => 16,
+            'Google\\LongRunning\\' => 19,
+            'Google\\Iam\\' => 11,
+            'Google\\Cloud\\Vision\\' => 20,
+            'Google\\Cloud\\Core\\' => 18,
+            'Google\\Cloud\\' => 13,
+            'Google\\Auth\\' => 12,
+            'Google\\Api\\' => 11,
+            'Google\\ApiCore\\LongRunning\\' => 27,
+            'Google\\ApiCore\\' => 15,
+            'GPBMetadata\\Google\\Type\\' => 24,
+            'GPBMetadata\\Google\\Rpc\\' => 23,
+            'GPBMetadata\\Google\\Protobuf\\' => 28,
+            'GPBMetadata\\Google\\Longrunning\\' => 31,
+            'GPBMetadata\\Google\\Logging\\' => 27,
+            'GPBMetadata\\Google\\Iam\\' => 23,
+            'GPBMetadata\\Google\\Cloud\\Vision\\' => 32,
+            'GPBMetadata\\Google\\Cloud\\' => 25,
+            'GPBMetadata\\Google\\Api\\' => 23,
+        ),
+        'F' =>
+        array (
+            'Firebase\\JWT\\' => 13,
         ),
         'E' =>
         array (
@@ -53,6 +97,7 @@ class ComposerStaticInit5726834464b54df5c26cde494ec31af2
         ),
         'B' =>
         array (
+            'Brick\\Math\\' => 11,
             'BaconQrCode\\' => 12,
         ),
     );
@@ -61,6 +106,10 @@ class ComposerStaticInit5726834464b54df5c26cde494ec31af2
         'ZipStream\\' =>
         array (
             0 => __DIR__ . '/..' . '/maennchen/zipstream-php/src',
+        ),
+        'Symfony\\Polyfill\\Php82\\' =>
+        array (
+            0 => __DIR__ . '/..' . '/symfony/polyfill-php82',
         ),
         'Symfony\\Polyfill\\Php80\\' =>
         array (
@@ -74,9 +123,38 @@ class ComposerStaticInit5726834464b54df5c26cde494ec31af2
         array (
             0 => __DIR__ . '/..' . '/symfony/polyfill-ctype',
         ),
+        'Rize\\' =>
+        array (
+            0 => __DIR__ . '/..' . '/rize/uri-template/src/Rize',
+        ),
+        'Ramsey\\Uuid\\' =>
+        array (
+            0 => __DIR__ . '/..' . '/ramsey/uuid/src',
+        ),
+        'Ramsey\\Collection\\' =>
+        array (
+            0 => __DIR__ . '/..' . '/ramsey/collection/src',
+        ),
         'Psr\\SimpleCache\\' =>
         array (
             0 => __DIR__ . '/..' . '/psr/simple-cache/src',
+        ),
+        'Psr\\Log\\' =>
+        array (
+            0 => __DIR__ . '/..' . '/psr/log/src',
+        ),
+        'Psr\\Http\\Message\\' =>
+        array (
+            0 => __DIR__ . '/..' . '/psr/http-factory/src',
+            1 => __DIR__ . '/..' . '/psr/http-message/src',
+        ),
+        'Psr\\Http\\Client\\' =>
+        array (
+            0 => __DIR__ . '/..' . '/psr/http-client/src',
+        ),
+        'Psr\\Cache\\' =>
+        array (
+            0 => __DIR__ . '/..' . '/psr/cache/src',
         ),
         'PhpOption\\' =>
         array (
@@ -86,13 +164,125 @@ class ComposerStaticInit5726834464b54df5c26cde494ec31af2
         array (
             0 => __DIR__ . '/..' . '/phpoffice/phpspreadsheet/src/PhpSpreadsheet',
         ),
+        'Monolog\\' =>
+        array (
+            0 => __DIR__ . '/..' . '/monolog/monolog/src/Monolog',
+        ),
         'Matrix\\' =>
         array (
             0 => __DIR__ . '/..' . '/markbaker/matrix/classes/src',
         ),
+        'GuzzleHttp\\Psr7\\' =>
+        array (
+            0 => __DIR__ . '/..' . '/guzzlehttp/psr7/src',
+        ),
+        'GuzzleHttp\\Promise\\' =>
+        array (
+            0 => __DIR__ . '/..' . '/guzzlehttp/promises/src',
+        ),
+        'GuzzleHttp\\' =>
+        array (
+            0 => __DIR__ . '/..' . '/guzzlehttp/guzzle/src',
+        ),
+        'Grpc\\Gcp\\' =>
+        array (
+            0 => __DIR__ . '/..' . '/google/grpc-gcp/src',
+        ),
+        'Grpc\\' =>
+        array (
+            0 => __DIR__ . '/..' . '/grpc/grpc/src/lib',
+        ),
         'GrahamCampbell\\ResultType\\' =>
         array (
             0 => __DIR__ . '/..' . '/graham-campbell/result-type/src',
+        ),
+        'Google\\Type\\' =>
+        array (
+            0 => __DIR__ . '/..' . '/google/common-protos/src/Type',
+        ),
+        'Google\\Rpc\\' =>
+        array (
+            0 => __DIR__ . '/..' . '/google/common-protos/src/Rpc',
+        ),
+        'Google\\Protobuf\\' =>
+        array (
+            0 => __DIR__ . '/..' . '/google/protobuf/src/Google/Protobuf',
+        ),
+        'Google\\LongRunning\\' =>
+        array (
+            0 => __DIR__ . '/..' . '/google/longrunning/src/LongRunning',
+        ),
+        'Google\\Iam\\' =>
+        array (
+            0 => __DIR__ . '/..' . '/google/common-protos/src/Iam',
+        ),
+        'Google\\Cloud\\Vision\\' =>
+        array (
+            0 => __DIR__ . '/..' . '/google/cloud-vision/src',
+        ),
+        'Google\\Cloud\\Core\\' =>
+        array (
+            0 => __DIR__ . '/..' . '/google/cloud-core/src',
+        ),
+        'Google\\Cloud\\' =>
+        array (
+            0 => __DIR__ . '/..' . '/google/common-protos/src/Cloud',
+        ),
+        'Google\\Auth\\' =>
+        array (
+            0 => __DIR__ . '/..' . '/google/auth/src',
+        ),
+        'Google\\Api\\' =>
+        array (
+            0 => __DIR__ . '/..' . '/google/common-protos/src/Api',
+        ),
+        'Google\\ApiCore\\LongRunning\\' =>
+        array (
+            0 => __DIR__ . '/..' . '/google/longrunning/src/ApiCore/LongRunning',
+        ),
+        'Google\\ApiCore\\' =>
+        array (
+            0 => __DIR__ . '/..' . '/google/gax/src',
+        ),
+        'GPBMetadata\\Google\\Type\\' =>
+        array (
+            0 => __DIR__ . '/..' . '/google/common-protos/metadata/Type',
+        ),
+        'GPBMetadata\\Google\\Rpc\\' =>
+        array (
+            0 => __DIR__ . '/..' . '/google/common-protos/metadata/Rpc',
+        ),
+        'GPBMetadata\\Google\\Protobuf\\' =>
+        array (
+            0 => __DIR__ . '/..' . '/google/protobuf/src/GPBMetadata/Google/Protobuf',
+        ),
+        'GPBMetadata\\Google\\Longrunning\\' =>
+        array (
+            0 => __DIR__ . '/..' . '/google/longrunning/metadata/Longrunning',
+        ),
+        'GPBMetadata\\Google\\Logging\\' =>
+        array (
+            0 => __DIR__ . '/..' . '/google/common-protos/metadata/Logging',
+        ),
+        'GPBMetadata\\Google\\Iam\\' =>
+        array (
+            0 => __DIR__ . '/..' . '/google/common-protos/metadata/Iam',
+        ),
+        'GPBMetadata\\Google\\Cloud\\Vision\\' =>
+        array (
+            0 => __DIR__ . '/..' . '/google/cloud-vision/metadata',
+        ),
+        'GPBMetadata\\Google\\Cloud\\' =>
+        array (
+            0 => __DIR__ . '/..' . '/google/common-protos/metadata/Cloud',
+        ),
+        'GPBMetadata\\Google\\Api\\' =>
+        array (
+            0 => __DIR__ . '/..' . '/google/common-protos/metadata/Api',
+        ),
+        'Firebase\\JWT\\' =>
+        array (
+            0 => __DIR__ . '/..' . '/firebase/php-jwt/src',
         ),
         'Endroid\\QrCode\\' =>
         array (
@@ -114,6 +304,10 @@ class ComposerStaticInit5726834464b54df5c26cde494ec31af2
         array (
             0 => __DIR__ . '/..' . '/markbaker/complex/classes/src',
         ),
+        'Brick\\Math\\' =>
+        array (
+            0 => __DIR__ . '/..' . '/brick/math/src',
+        ),
         'BaconQrCode\\' =>
         array (
             0 => __DIR__ . '/..' . '/bacon/bacon-qr-code/src',
@@ -121,9 +315,24 @@ class ComposerStaticInit5726834464b54df5c26cde494ec31af2
     );
 
     public static $classMap = array (
+        'AllowDynamicProperties' => __DIR__ . '/..' . '/symfony/polyfill-php82/Resources/stubs/AllowDynamicProperties.php',
         'Attribute' => __DIR__ . '/..' . '/symfony/polyfill-php80/Resources/stubs/Attribute.php',
         'Composer\\InstalledVersions' => __DIR__ . '/..' . '/composer/InstalledVersions.php',
+        'GPBMetadata\\GrpcGcp' => __DIR__ . '/..' . '/google/grpc-gcp/src/generated/GPBMetadata/GrpcGcp.php',
+        'Grpc\\Gcp\\AffinityConfig' => __DIR__ . '/..' . '/google/grpc-gcp/src/generated/Grpc/Gcp/AffinityConfig.php',
+        'Grpc\\Gcp\\AffinityConfig_Command' => __DIR__ . '/..' . '/google/grpc-gcp/src/generated/Grpc/Gcp/AffinityConfig_Command.php',
+        'Grpc\\Gcp\\ApiConfig' => __DIR__ . '/..' . '/google/grpc-gcp/src/generated/Grpc/Gcp/ApiConfig.php',
+        'Grpc\\Gcp\\ChannelPoolConfig' => __DIR__ . '/..' . '/google/grpc-gcp/src/generated/Grpc/Gcp/ChannelPoolConfig.php',
+        'Grpc\\Gcp\\MethodConfig' => __DIR__ . '/..' . '/google/grpc-gcp/src/generated/Grpc/Gcp/MethodConfig.php',
         'PhpToken' => __DIR__ . '/..' . '/symfony/polyfill-php80/Resources/stubs/PhpToken.php',
+        'Random\\BrokenRandomEngineError' => __DIR__ . '/..' . '/symfony/polyfill-php82/Resources/stubs/Random/BrokenRandomEngineError.php',
+        'Random\\CryptoSafeEngine' => __DIR__ . '/..' . '/symfony/polyfill-php82/Resources/stubs/Random/CryptoSafeEngine.php',
+        'Random\\Engine' => __DIR__ . '/..' . '/symfony/polyfill-php82/Resources/stubs/Random/Engine.php',
+        'Random\\Engine\\Secure' => __DIR__ . '/..' . '/symfony/polyfill-php82/Resources/stubs/Random/Engine/Secure.php',
+        'Random\\RandomError' => __DIR__ . '/..' . '/symfony/polyfill-php82/Resources/stubs/Random/RandomError.php',
+        'Random\\RandomException' => __DIR__ . '/..' . '/symfony/polyfill-php82/Resources/stubs/Random/RandomException.php',
+        'SensitiveParameter' => __DIR__ . '/..' . '/symfony/polyfill-php82/Resources/stubs/SensitiveParameter.php',
+        'SensitiveParameterValue' => __DIR__ . '/..' . '/symfony/polyfill-php82/Resources/stubs/SensitiveParameterValue.php',
         'Stringable' => __DIR__ . '/..' . '/symfony/polyfill-php80/Resources/stubs/Stringable.php',
         'UnhandledMatchError' => __DIR__ . '/..' . '/symfony/polyfill-php80/Resources/stubs/UnhandledMatchError.php',
         'ValueError' => __DIR__ . '/..' . '/symfony/polyfill-php80/Resources/stubs/ValueError.php',
