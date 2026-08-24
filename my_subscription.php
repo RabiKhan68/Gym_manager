@@ -20,8 +20,24 @@ if (!isset($_SESSION["owner_id"])) {
 
 $owner_id = (int) $_SESSION["owner_id"];
 
-$today = date("Y-m-d");
+/*
+|--------------------------------------------------------------------------
+| APPLICATION TIMEZONE
+|--------------------------------------------------------------------------
+|
+| The application should use Pakistan time regardless of the
+| Render/PHP server timezone.
+|
+*/
 
+$app_timezone = new DateTimeZone("Asia/Karachi");
+
+$today = new DateTime(
+    "now",
+    $app_timezone
+);
+
+$today = $today->format("Y-m-d");
 
 /*
 |--------------------------------------------------------------------------
