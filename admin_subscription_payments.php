@@ -7,7 +7,23 @@ require_once "backend/db.php";
 
 /*
 |--------------------------------------------------------------------------
-| Check admin login
+| HELPER FUNCTION
+|--------------------------------------------------------------------------
+*/
+
+function e($value)
+{
+    return htmlspecialchars(
+        (string) $value,
+        ENT_QUOTES,
+        "UTF-8"
+    );
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| CHECK ADMIN LOGIN
 |--------------------------------------------------------------------------
 */
 
@@ -21,61 +37,86 @@ if (!isset($_SESSION["admin_id"])) {
 
 /*
 |--------------------------------------------------------------------------
-| Get subscription payments
+| GET SUBSCRIPTION PAYMENTS
+|--------------------------------------------------------------------------
+|
+| IMPORTANT:
+|
+| A payment can exist BEFORE a subscription is created.
+|
+| Therefore:
+|
+| p.subscription_id may be NULL.
+|
+| We get the selected plan directly from:
+|
+| p.subscription_plan_id
+|
+| The subscription table is LEFT JOINed because the subscription
+| may not exist yet.
+|
 |--------------------------------------------------------------------------
 */
 
-$sql = "SELECT
+$sql = "
+    SELECT
 
-            p.payment_id,
-            p.amount,
-            p.payment_date,
-            p.payment_method,
-            p.payment_status,
-            p.transaction_reference,
+        p.payment_id,
+        p.owner_id,
+        p.subscription_plan_id,
+        p.subscription_id,
+        p.amount,
+        p.payment_date,
+        p.payment_method,
+        p.payment_status,
+        p.transaction_reference,
+        p.gateway_transaction_id,
+        p.created_at,
 
-            o.owner_id,
-            o.name AS owner_name,
-            o.email AS owner_email,
-            o.phone AS owner_phone,
+        o.name AS owner_name,
+        o.email AS owner_email,
+        o.phone AS owner_phone,
 
-            s.subscription_id,
-            s.start_date,
-            s.end_date,
-            s.status AS subscription_status,
+        s.start_date,
+        s.end_date,
+        s.status AS subscription_status,
 
-            sp.subscription_plan_id,
-            sp.plan_name,
-            sp.price,
-            sp.member_limit,
+        sp.plan_name,
+        sp.price,
+        sp.member_limit,
 
-            g.gym_name
+        g.gym_name
 
-        FROM gym_owner_subscription_payments p
+    FROM gym_owner_subscription_payments p
 
-        INNER JOIN gym_owners o
-            ON p.owner_id = o.owner_id
+    INNER JOIN gym_owners o
+        ON p.owner_id = o.owner_id
 
-        INNER JOIN gym_owner_subscriptions s
-            ON p.subscription_id = s.subscription_id
+    INNER JOIN subscription_plans sp
+        ON p.subscription_plan_id =
+           sp.subscription_plan_id
 
-        INNER JOIN subscription_plans sp
-            ON s.subscription_plan_id = sp.subscription_plan_id
+    LEFT JOIN gym_owner_subscriptions s
+        ON p.subscription_id =
+           s.subscription_id
 
-        LEFT JOIN gyms g
-            ON o.owner_id = g.owner_id
+    LEFT JOIN gyms g
+        ON o.owner_id = g.owner_id
 
-        ORDER BY p.payment_id DESC";
+    ORDER BY
+        p.payment_id DESC
+";
 
 
-$result = $conn->query($sql);
+$result =
+    $conn->query($sql);
 
 
 if (!$result) {
 
     die(
         "Database error: " .
-        htmlspecialchars($conn->error)
+        e($conn->error)
     );
 
 }
@@ -83,40 +124,91 @@ if (!$result) {
 
 /*
 |--------------------------------------------------------------------------
-| Summary
+| SUMMARY
 |--------------------------------------------------------------------------
 */
 
 $total_revenue = 0;
 
 $paid_count = 0;
+
+$submitted_count = 0;
+
 $pending_count = 0;
+
 $failed_count = 0;
 
 $payments = [];
 
 
-while ($row = $result->fetch_assoc()) {
+while (
+    $row =
+    $result->fetch_assoc()
+) {
 
-    $payments[] = $row;
+    $payments[] =
+        $row;
 
 
-    if ($row["payment_status"] === "paid") {
+    /*
+    |--------------------------------------------------------------------------
+    | PAID
+    |--------------------------------------------------------------------------
+    */
+
+    if (
+        $row["payment_status"] === "paid"
+    ) {
 
         $paid_count++;
 
+
         $total_revenue +=
-            (float) $row["amount"];
+            (float)
+            $row["amount"];
 
     }
 
-    elseif ($row["payment_status"] === "pending") {
+
+    /*
+    |--------------------------------------------------------------------------
+    | SUBMITTED
+    |--------------------------------------------------------------------------
+    */
+
+    elseif (
+        $row["payment_status"] === "submitted"
+    ) {
+
+        $submitted_count++;
+
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | PENDING
+    |--------------------------------------------------------------------------
+    */
+
+    elseif (
+        $row["payment_status"] === "pending"
+    ) {
 
         $pending_count++;
 
     }
 
-    elseif ($row["payment_status"] === "failed") {
+
+    /*
+    |--------------------------------------------------------------------------
+    | FAILED
+    |--------------------------------------------------------------------------
+    */
+
+    elseif (
+        $row["payment_status"] === "failed"
+    ) {
 
         $failed_count++;
 
@@ -168,7 +260,7 @@ while ($row = $result->fetch_assoc()) {
 
         .container {
 
-            max-width: 1500px;
+            max-width: 1550px;
 
             margin: auto;
 
@@ -177,7 +269,11 @@ while ($row = $result->fetch_assoc()) {
         }
 
 
-        /* HEADER */
+        /*
+        |--------------------------------------------------------------------------
+        | HEADER
+        |--------------------------------------------------------------------------
+        */
 
         .header {
 
@@ -189,6 +285,8 @@ while ($row = $result->fetch_assoc()) {
             align-items: center;
 
             margin-bottom: 25px;
+
+            gap: 20px;
 
         }
 
@@ -225,6 +323,10 @@ while ($row = $result->fetch_assoc()) {
 
             border-radius: 8px;
 
+            font-weight: bold;
+
+            white-space: nowrap;
+
         }
 
 
@@ -235,14 +337,18 @@ while ($row = $result->fetch_assoc()) {
         }
 
 
-        /* SUMMARY */
+        /*
+        |--------------------------------------------------------------------------
+        | SUMMARY
+        |--------------------------------------------------------------------------
+        */
 
         .summary {
 
             display: grid;
 
             grid-template-columns:
-                repeat(4, 1fr);
+                repeat(5, 1fr);
 
             gap: 20px;
 
@@ -261,7 +367,7 @@ while ($row = $result->fetch_assoc()) {
 
             box-shadow:
                 0 3px 12px
-                rgba(0,0,0,0.06);
+                rgba(0, 0, 0, 0.06);
 
         }
 
@@ -286,7 +392,11 @@ while ($row = $result->fetch_assoc()) {
         }
 
 
-        /* TABLE */
+        /*
+        |--------------------------------------------------------------------------
+        | TABLE CARD
+        |--------------------------------------------------------------------------
+        */
 
         .card {
 
@@ -298,7 +408,7 @@ while ($row = $result->fetch_assoc()) {
 
             box-shadow:
                 0 3px 12px
-                rgba(0,0,0,0.06);
+                rgba(0, 0, 0, 0.06);
 
             overflow-x: auto;
 
@@ -312,7 +422,7 @@ while ($row = $result->fetch_assoc()) {
             border-collapse:
                 collapse;
 
-            min-width: 1350px;
+            min-width: 1500px;
 
         }
 
@@ -326,6 +436,8 @@ while ($row = $result->fetch_assoc()) {
 
             border-bottom:
                 1px solid #e5e7eb;
+
+            vertical-align: top;
 
         }
 
@@ -348,6 +460,12 @@ while ($row = $result->fetch_assoc()) {
         }
 
 
+        /*
+        |--------------------------------------------------------------------------
+        | OWNER
+        |--------------------------------------------------------------------------
+        */
+
         .owner {
 
             font-weight: bold;
@@ -355,14 +473,29 @@ while ($row = $result->fetch_assoc()) {
         }
 
 
-        .email {
+        .phone {
 
             color: #6b7280;
 
             font-size: 13px;
 
+            margin-top: 4px;
+
         }
 
+
+        .email {
+
+            color: #374151;
+
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | GYM / PLAN
+        |--------------------------------------------------------------------------
+        */
 
         .gym {
 
@@ -378,6 +511,23 @@ while ($row = $result->fetch_assoc()) {
         }
 
 
+        .plan-limit {
+
+            color: #6b7280;
+
+            font-size: 12px;
+
+            margin-top: 4px;
+
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | AMOUNT
+        |--------------------------------------------------------------------------
+        */
+
         .amount {
 
             font-weight: bold;
@@ -386,6 +536,12 @@ while ($row = $result->fetch_assoc()) {
 
         }
 
+
+        /*
+        |--------------------------------------------------------------------------
+        | DATE
+        |--------------------------------------------------------------------------
+        */
 
         .date {
 
@@ -396,7 +552,11 @@ while ($row = $result->fetch_assoc()) {
         }
 
 
-        /* PAYMENT STATUS */
+        /*
+        |--------------------------------------------------------------------------
+        | PAYMENT STATUS
+        |--------------------------------------------------------------------------
+        */
 
         .status {
 
@@ -410,6 +570,8 @@ while ($row = $result->fetch_assoc()) {
 
             font-weight: bold;
 
+            white-space: nowrap;
+
         }
 
 
@@ -418,6 +580,15 @@ while ($row = $result->fetch_assoc()) {
             background: #dcfce7;
 
             color: #166534;
+
+        }
+
+
+        .submitted {
+
+            background: #dbeafe;
+
+            color: #1d4ed8;
 
         }
 
@@ -440,34 +611,79 @@ while ($row = $result->fetch_assoc()) {
         }
 
 
-        /* SUBSCRIPTION STATUS */
+        /*
+        |--------------------------------------------------------------------------
+        | SUBSCRIPTION STATUS
+        |--------------------------------------------------------------------------
+        */
+
+        .subscription-status {
+
+            display: inline-block;
+
+            padding: 6px 10px;
+
+            border-radius: 20px;
+
+            font-size: 12px;
+
+            font-weight: bold;
+
+            white-space: nowrap;
+
+        }
+
 
         .subscription-active {
 
+            background: #dcfce7;
+
             color: #166534;
 
-            font-weight: bold;
+        }
+
+
+        .subscription-scheduled {
+
+            background: #dbeafe;
+
+            color: #1d4ed8;
 
         }
 
 
         .subscription-expired {
 
-            color: #991b1b;
+            background: #fee2e2;
 
-            font-weight: bold;
+            color: #991b1b;
 
         }
 
 
         .subscription-cancelled {
 
-            color: #6b7280;
+            background: #e5e7eb;
 
-            font-weight: bold;
+            color: #374151;
 
         }
 
+
+        .subscription-not-created {
+
+            background: #fef3c7;
+
+            color: #92400e;
+
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | TRANSACTION
+        |--------------------------------------------------------------------------
+        */
 
         .transaction {
 
@@ -476,8 +692,48 @@ while ($row = $result->fetch_assoc()) {
 
             font-size: 13px;
 
+            max-width: 260px;
+
+            word-break: break-all;
+
         }
 
+
+        .gateway {
+
+            margin-top: 6px;
+
+            color: #6b7280;
+
+            font-size: 12px;
+
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | SUBSCRIPTION DETAILS
+        |--------------------------------------------------------------------------
+        */
+
+        .subscription-details {
+
+            font-size: 13px;
+
+            color: #4b5563;
+
+            margin-top: 7px;
+
+            line-height: 1.5;
+
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | EMPTY
+        |--------------------------------------------------------------------------
+        */
 
         .empty {
 
@@ -486,6 +742,50 @@ while ($row = $result->fetch_assoc()) {
             padding: 50px;
 
             color: #6b7280;
+
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | INFO NOTICE
+        |--------------------------------------------------------------------------
+        */
+
+        .info {
+
+            margin-bottom: 20px;
+
+            padding: 14px 16px;
+
+            border-radius: 9px;
+
+            background: #eff6ff;
+
+            border:
+                1px solid #bfdbfe;
+
+            color: #1e40af;
+
+            line-height: 1.5;
+
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | RESPONSIVE
+        |--------------------------------------------------------------------------
+        */
+
+        @media (max-width: 1200px) {
+
+            .summary {
+
+                grid-template-columns:
+                    repeat(3, 1fr);
+
+            }
 
         }
 
@@ -541,15 +841,22 @@ while ($row = $result->fetch_assoc()) {
 <div class="container">
 
 
-    <!-- HEADER -->
+    <!--
+    |--------------------------------------------------------------------------
+    | HEADER
+    |--------------------------------------------------------------------------
+    -->
+
 
     <div class="header">
+
 
         <div>
 
             <h1>
                 Subscription Payments
             </h1>
+
 
             <p>
                 Monitor payments made by gym owners
@@ -567,20 +874,53 @@ while ($row = $result->fetch_assoc()) {
 
         </a>
 
+
     </div>
 
 
 
-    <!-- SUMMARY -->
+    <!--
+    |--------------------------------------------------------------------------
+    | INFORMATION
+    |--------------------------------------------------------------------------
+    -->
+
+
+    <div class="info">
+
+        <strong>
+            Payment verification:
+        </strong>
+
+        Payments marked as
+        <strong>Submitted</strong>
+        are waiting for administrator verification.
+
+        A submitted payment does not automatically mean
+        the subscription has been created.
+
+    </div>
+
+
+
+    <!--
+    |--------------------------------------------------------------------------
+    | SUMMARY
+    |--------------------------------------------------------------------------
+    -->
+
 
     <div class="summary">
 
+
+        <!-- TOTAL REVENUE -->
 
         <div class="summary-card">
 
             <div class="summary-title">
                 Total Revenue
             </div>
+
 
             <div class="summary-number">
 
@@ -600,22 +940,54 @@ while ($row = $result->fetch_assoc()) {
         </div>
 
 
+
+        <!-- PAID -->
+
         <div class="summary-card">
 
             <div class="summary-title">
                 Paid Payments
             </div>
 
+
             <div class="summary-number">
 
                 <?php
+
                 echo $paid_count;
+
                 ?>
 
             </div>
 
         </div>
 
+
+
+        <!-- SUBMITTED -->
+
+        <div class="summary-card">
+
+            <div class="summary-title">
+                Submitted Payments
+            </div>
+
+
+            <div class="summary-number">
+
+                <?php
+
+                echo $submitted_count;
+
+                ?>
+
+            </div>
+
+        </div>
+
+
+
+        <!-- PENDING -->
 
         <div class="summary-card">
 
@@ -623,10 +995,13 @@ while ($row = $result->fetch_assoc()) {
                 Pending Payments
             </div>
 
+
             <div class="summary-number">
 
                 <?php
+
                 echo $pending_count;
+
                 ?>
 
             </div>
@@ -634,16 +1009,22 @@ while ($row = $result->fetch_assoc()) {
         </div>
 
 
+
+        <!-- FAILED -->
+
         <div class="summary-card">
 
             <div class="summary-title">
                 Failed Payments
             </div>
 
+
             <div class="summary-number">
 
                 <?php
+
                 echo $failed_count;
+
                 ?>
 
             </div>
@@ -655,15 +1036,23 @@ while ($row = $result->fetch_assoc()) {
 
 
 
-    <!-- PAYMENTS -->
+    <!--
+    |--------------------------------------------------------------------------
+    | PAYMENTS
+    |--------------------------------------------------------------------------
+    -->
+
 
     <div class="card">
 
 
-        <?php if (count($payments) > 0): ?>
+        <?php if (
+            count($payments) > 0
+        ): ?>
 
 
             <table>
+
 
                 <thead>
 
@@ -718,6 +1107,7 @@ while ($row = $result->fetch_assoc()) {
                 </thead>
 
 
+
                 <tbody>
 
 
@@ -730,7 +1120,12 @@ while ($row = $result->fetch_assoc()) {
                     <tr>
 
 
-                        <!-- PAYMENT ID -->
+                        <!--
+                        ------------------------------------------------------
+                        PAYMENT ID
+                        ------------------------------------------------------
+                        -->
+
 
                         <td>
 
@@ -747,7 +1142,12 @@ while ($row = $result->fetch_assoc()) {
 
 
 
-                        <!-- OWNER -->
+                        <!--
+                        ------------------------------------------------------
+                        OWNER
+                        ------------------------------------------------------
+                        -->
+
 
                         <td>
 
@@ -755,7 +1155,7 @@ while ($row = $result->fetch_assoc()) {
 
                                 <?php
 
-                                echo htmlspecialchars(
+                                echo e(
                                     $payment[
                                         "owner_name"
                                     ]
@@ -766,14 +1166,15 @@ while ($row = $result->fetch_assoc()) {
                             </div>
 
 
-                            <div class="email">
+                            <div class="phone">
 
                                 <?php
 
-                                echo htmlspecialchars(
+                                echo e(
                                     $payment[
                                         "owner_phone"
-                                    ] ?? "-"
+                                    ] ??
+                                    "-"
                                 );
 
                                 ?>
@@ -784,34 +1185,49 @@ while ($row = $result->fetch_assoc()) {
 
 
 
-                        <!-- EMAIL -->
+                        <!--
+                        ------------------------------------------------------
+                        EMAIL
+                        ------------------------------------------------------
+                        -->
+
 
                         <td>
 
-                            <?php
+                            <div class="email">
 
-                            echo htmlspecialchars(
-                                $payment[
-                                    "owner_email"
-                                ]
-                            );
+                                <?php
 
-                            ?>
+                                echo e(
+                                    $payment[
+                                        "owner_email"
+                                    ]
+                                );
+
+                                ?>
+
+                            </div>
 
                         </td>
 
 
 
-                        <!-- GYM -->
+                        <!--
+                        ------------------------------------------------------
+                        GYM
+                        ------------------------------------------------------
+                        -->
+
 
                         <td class="gym">
 
                             <?php
 
-                            echo htmlspecialchars(
+                            echo e(
                                 $payment[
                                     "gym_name"
-                                ] ?? "No gym"
+                                ] ??
+                                "No gym"
                             );
 
                             ?>
@@ -820,25 +1236,72 @@ while ($row = $result->fetch_assoc()) {
 
 
 
-                        <!-- PACKAGE -->
+                        <!--
+                        ------------------------------------------------------
+                        PACKAGE
+                        ------------------------------------------------------
+                        -->
 
-                        <td class="plan">
 
-                            <?php
+                        <td>
 
-                            echo htmlspecialchars(
-                                $payment[
-                                    "plan_name"
-                                ]
-                            );
+                            <div class="plan">
 
-                            ?>
+                                <?php
+
+                                echo e(
+                                    $payment[
+                                        "plan_name"
+                                    ]
+                                );
+
+                                ?>
+
+                            </div>
+
+
+                            <div class="plan-limit">
+
+                                <?php
+
+                                if (
+                                    $payment[
+                                        "member_limit"
+                                    ] !== null
+                                ) {
+
+                                    echo "Up to ";
+
+                                    echo number_format(
+                                        (int)
+                                        $payment[
+                                            "member_limit"
+                                        ]
+                                    );
+
+                                    echo " members";
+
+                                }
+                                else {
+
+                                    echo "Unlimited members";
+
+                                }
+
+                                ?>
+
+                            </div>
 
                         </td>
 
 
 
-                        <!-- AMOUNT -->
+                        <!--
+                        ------------------------------------------------------
+                        AMOUNT
+                        ------------------------------------------------------
+                        -->
+
 
                         <td class="amount">
 
@@ -847,6 +1310,7 @@ while ($row = $result->fetch_assoc()) {
                             <?php
 
                             echo number_format(
+                                (float)
                                 $payment[
                                     "amount"
                                 ],
@@ -859,11 +1323,26 @@ while ($row = $result->fetch_assoc()) {
 
 
 
-                        <!-- PAYMENT DATE -->
+                        <!--
+                        ------------------------------------------------------
+                        PAYMENT DATE
+                        ------------------------------------------------------
+                        -->
+
 
                         <td class="date">
 
                             <?php
+
+                            /*
+                            |--------------------------------------------------
+                            | Prefer payment_date.
+                            | If it is NULL, use created_at.
+                            |--------------------------------------------------
+                            */
+
+                            $display_date = null;
+
 
                             if (
                                 !empty(
@@ -873,16 +1352,54 @@ while ($row = $result->fetch_assoc()) {
                                 )
                             ) {
 
-                                echo date(
-                                    "d M Y h:i A",
-                                    strtotime(
-                                        $payment[
-                                            "payment_date"
-                                        ]
-                                    )
-                                );
+                                $display_date =
+                                    $payment[
+                                        "payment_date"
+                                    ];
 
-                            } else {
+                            }
+                            elseif (
+                                !empty(
+                                    $payment[
+                                        "created_at"
+                                    ]
+                                )
+                            ) {
+
+                                $display_date =
+                                    $payment[
+                                        "created_at"
+                                    ];
+
+                            }
+
+
+                            if ($display_date) {
+
+                                $timestamp =
+                                    strtotime(
+                                        $display_date
+                                    );
+
+
+                                if ($timestamp) {
+
+                                    echo e(
+                                        date(
+                                            "d M Y h:i A",
+                                            $timestamp
+                                        )
+                                    );
+
+                                }
+                                else {
+
+                                    echo "-";
+
+                                }
+
+                            }
+                            else {
 
                                 echo "-";
 
@@ -894,17 +1411,23 @@ while ($row = $result->fetch_assoc()) {
 
 
 
-                        <!-- METHOD -->
+                        <!--
+                        ------------------------------------------------------
+                        PAYMENT METHOD
+                        ------------------------------------------------------
+                        -->
+
 
                         <td>
 
                             <?php
 
-                            echo htmlspecialchars(
+                            echo e(
                                 ucwords(
                                     str_replace(
                                         "_",
                                         " ",
+                                        (string)
                                         $payment[
                                             "payment_method"
                                         ]
@@ -918,26 +1441,77 @@ while ($row = $result->fetch_assoc()) {
 
 
 
-                        <!-- PAYMENT STATUS -->
+                        <!--
+                        ------------------------------------------------------
+                        PAYMENT STATUS
+                        ------------------------------------------------------
+                        -->
+
 
                         <td>
+
 
                             <?php
 
                             $payment_status =
-                                $payment[
-                                    "payment_status"
-                                ];
+                                strtolower(
+                                    trim(
+                                        (string)
+                                        $payment[
+                                            "payment_status"
+                                        ]
+                                    )
+                                );
+
+
+                            /*
+                            |--------------------------------------------------
+                            | Only allow known CSS status classes.
+                            |--------------------------------------------------
+                            */
+
+                            $payment_status_class =
+                                "pending";
+
+
+                            if (
+                                $payment_status ===
+                                "paid"
+                            ) {
+
+                                $payment_status_class =
+                                    "paid";
+
+                            }
+                            elseif (
+                                $payment_status ===
+                                "submitted"
+                            ) {
+
+                                $payment_status_class =
+                                    "submitted";
+
+                            }
+                            elseif (
+                                $payment_status ===
+                                "failed"
+                            ) {
+
+                                $payment_status_class =
+                                    "failed";
+
+                            }
 
                             ?>
 
+
                             <span
-                                class="status <?php echo htmlspecialchars($payment_status); ?>"
+                                class="status <?php echo $payment_status_class; ?>"
                             >
 
                                 <?php
 
-                                echo htmlspecialchars(
+                                echo e(
                                     ucfirst(
                                         $payment_status
                                     )
@@ -947,60 +1521,315 @@ while ($row = $result->fetch_assoc()) {
 
                             </span>
 
+
                         </td>
 
 
 
-                        <!-- SUBSCRIPTION STATUS -->
+                        <!--
+                        ------------------------------------------------------
+                        SUBSCRIPTION
+                        ------------------------------------------------------
+                        -->
+
 
                         <td>
 
+
                             <?php
 
-                            $subscription_status =
-                                $payment[
-                                    "subscription_status"
-                                ];
+                            /*
+                            |--------------------------------------------------
+                            | No subscription yet
+                            |--------------------------------------------------
+                            */
 
-                            $subscription_class =
-                                "subscription-" .
-                                $subscription_status;
+                            if (
+                                empty(
+                                    $payment[
+                                        "subscription_id"
+                                    ]
+                                )
+                            ) {
 
-                            ?>
-
-                            <span
-                                class="<?php echo htmlspecialchars($subscription_class); ?>"
-                            >
-
-                                <?php
-
-                                echo htmlspecialchars(
-                                    ucfirst(
-                                        $subscription_status
-                                    )
-                                );
 
                                 ?>
 
-                            </span>
+                                <span
+                                    class="
+                                    subscription-status
+                                    subscription-not-created
+                                    "
+                                >
+
+                                    Not Created Yet
+
+                                </span>
+
+
+                                <div
+                                    class="subscription-details"
+                                >
+
+                                    Payment is waiting for
+                                    administrator verification.
+
+                                </div>
+
+
+                            <?php
+
+                            }
+
+                            /*
+                            |--------------------------------------------------
+                            | Subscription exists
+                            |--------------------------------------------------
+                            */
+
+                            else {
+
+
+                                $subscription_status =
+                                    strtolower(
+                                        trim(
+                                            (string)
+                                            $payment[
+                                                "subscription_status"
+                                            ]
+                                        )
+                                    );
+
+
+                                $subscription_class =
+                                    "subscription-not-created";
+
+
+                                if (
+                                    $subscription_status ===
+                                    "active"
+                                ) {
+
+                                    $subscription_class =
+                                        "subscription-active";
+
+                                }
+                                elseif (
+                                    $subscription_status ===
+                                    "scheduled"
+                                ) {
+
+                                    $subscription_class =
+                                        "subscription-scheduled";
+
+                                }
+                                elseif (
+                                    $subscription_status ===
+                                    "expired"
+                                ) {
+
+                                    $subscription_class =
+                                        "subscription-expired";
+
+                                }
+                                elseif (
+                                    $subscription_status ===
+                                    "cancelled"
+                                ) {
+
+                                    $subscription_class =
+                                        "subscription-cancelled";
+
+                                }
+
+                                ?>
+
+
+                                <span
+                                    class="
+                                    subscription-status
+                                    <?php
+                                    echo $subscription_class;
+                                    ?>
+                                    "
+                                >
+
+                                    <?php
+
+                                    echo e(
+                                        ucfirst(
+                                            $subscription_status
+                                        )
+                                    );
+
+                                    ?>
+
+                                </span>
+
+
+                                <?php if (
+                                    !empty(
+                                        $payment[
+                                            "start_date"
+                                        ]
+                                    )
+                                ): ?>
+
+
+                                    <div
+                                        class="
+                                        subscription-details
+                                        "
+                                    >
+
+                                        Start:
+
+                                        <?php
+
+                                        $start_timestamp =
+                                            strtotime(
+                                                $payment[
+                                                    "start_date"
+                                                ]
+                                            );
+
+
+                                        if (
+                                            $start_timestamp
+                                        ) {
+
+                                            echo e(
+                                                date(
+                                                    "d M Y",
+                                                    $start_timestamp
+                                                )
+                                            );
+
+                                        }
+                                        else {
+
+                                            echo "-";
+
+                                        }
+
+                                        ?>
+
+
+                                        <br>
+
+
+                                        End:
+
+                                        <?php
+
+                                        $end_timestamp =
+                                            strtotime(
+                                                $payment[
+                                                    "end_date"
+                                                ]
+                                            );
+
+
+                                        if (
+                                            $end_timestamp
+                                        ) {
+
+                                            echo e(
+                                                date(
+                                                    "d M Y",
+                                                    $end_timestamp
+                                                )
+                                            );
+
+                                        }
+                                        else {
+
+                                            echo "-";
+
+                                        }
+
+                                        ?>
+
+                                    </div>
+
+
+                                <?php endif; ?>
+
+
+                            <?php
+
+                            }
+
+                            ?>
+
 
                         </td>
 
 
 
-                        <!-- TRANSACTION -->
+                        <!--
+                        ------------------------------------------------------
+                        TRANSACTION
+                        ------------------------------------------------------
+                        -->
+
 
                         <td class="transaction">
 
+
+                            <div>
+
+                                <strong>
+                                    Owner Reference:
+                                </strong>
+
+                            </div>
+
+
                             <?php
 
-                            echo htmlspecialchars(
+                            echo e(
                                 $payment[
                                     "transaction_reference"
-                                ] ?? "-"
+                                ] ??
+                                "-"
                             );
 
                             ?>
+
+
+                            <?php if (
+                                !empty(
+                                    $payment[
+                                        "gateway_transaction_id"
+                                    ]
+                                )
+                            ): ?>
+
+
+                                <div
+                                    class="gateway"
+                                >
+
+                                    <strong>
+                                        Gateway:
+                                    </strong>
+
+                                    <?php
+
+                                    echo e(
+                                        $payment[
+                                            "gateway_transaction_id"
+                                        ]
+                                    );
+
+                                    ?>
+
+                                </div>
+
+
+                            <?php endif; ?>
+
 
                         </td>
 
@@ -1013,6 +1842,7 @@ while ($row = $result->fetch_assoc()) {
 
                 </tbody>
 
+
             </table>
 
 
@@ -1022,11 +1852,15 @@ while ($row = $result->fetch_assoc()) {
             <div class="empty">
 
                 <h2>
-                    No subscription payments yet
+                    No Subscription Payments Yet
                 </h2>
 
+
                 <p>
-                    Gym owners have not made any subscription payments.
+
+                    Gym owners have not made any
+                    subscription payments.
+
                 </p>
 
             </div>
