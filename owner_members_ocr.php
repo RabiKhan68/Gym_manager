@@ -7,6 +7,7 @@ require_once __DIR__ . "/vendor/autoload.php";
 
 use Google\Cloud\Vision\V1\Client\ImageAnnotatorClient;
 use Google\Cloud\Vision\V1\AnnotateImageRequest;
+use Google\Cloud\Vision\V1\BatchAnnotateImagesRequest;
 use Google\Cloud\Vision\V1\Image;
 use Google\Cloud\Vision\V1\Feature;
 use Google\Cloud\Vision\V1\Feature\Type;
@@ -591,13 +592,14 @@ if (
                                 */
 
                                 /*
+                                
+                                /*
 |--------------------------------------------------------------------------
 | Create Vision Image
 |--------------------------------------------------------------------------
 */
 
-$image =
-    new Image();
+$image = new Image();
 
 $image->setContent(
     $image_data
@@ -610,8 +612,7 @@ $image->setContent(
 |--------------------------------------------------------------------------
 */
 
-$feature =
-    new Feature();
+$feature = new Feature();
 
 $feature->setType(
     Type::DOCUMENT_TEXT_DETECTION
@@ -624,15 +625,29 @@ $feature->setType(
 |--------------------------------------------------------------------------
 */
 
-$request =
+$annotation_request =
     new AnnotateImageRequest();
 
-$request->setImage(
+$annotation_request->setImage(
     $image
 );
 
-$request->setFeatures([
+$annotation_request->setFeatures([
     $feature
+]);
+
+
+/*
+|--------------------------------------------------------------------------
+| Create Batch Request
+|--------------------------------------------------------------------------
+*/
+
+$batch_request =
+    new BatchAnnotateImagesRequest();
+
+$batch_request->setRequests([
+    $annotation_request
 ]);
 
 
@@ -643,14 +658,14 @@ $request->setFeatures([
 */
 
 $response =
-    $vision->batchAnnotateImages([
-        $request
-]);
+    $vision->batchAnnotateImages(
+        $batch_request
+    );
 
 
 /*
 |--------------------------------------------------------------------------
-| Get first image response
+| Get image responses
 |--------------------------------------------------------------------------
 */
 
@@ -698,7 +713,7 @@ if (
 
 /*
 |--------------------------------------------------------------------------
-| Get full OCR text
+| Get full OCR annotation
 |--------------------------------------------------------------------------
 */
 
