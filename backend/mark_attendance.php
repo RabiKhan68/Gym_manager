@@ -1,5 +1,7 @@
 <?php
 
+date_default_timezone_set("Asia/Karachi");
+
 require_once "db.php";
 
 
