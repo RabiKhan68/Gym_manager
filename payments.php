@@ -20,7 +20,7 @@ if (!isset($_SESSION["owner_id"])) {
 }
 
 
-$owner_id = $_SESSION["owner_id"];
+$owner_id = (int) $_SESSION["owner_id"];
 
 
 /*
@@ -29,19 +29,54 @@ $owner_id = $_SESSION["owner_id"];
 |--------------------------------------------------------------------------
 */
 
-$sql = "SELECT gym_id, gym_name
-        FROM gyms
-        WHERE owner_id = ?";
+$sql = "
+    SELECT
+        gym_id,
+        gym_name
+
+    FROM gyms
+
+    WHERE owner_id = ?
+
+    LIMIT 1
+";
+
 
 $stmt = $conn->prepare($sql);
 
-$stmt->bind_param("i", $owner_id);
 
-$stmt->execute();
+if (!$stmt) {
+
+    die(
+        "Database error: " .
+        htmlspecialchars($conn->error)
+    );
+
+}
+
+
+$stmt->bind_param(
+    "i",
+    $owner_id
+);
+
+
+if (!$stmt->execute()) {
+
+    $stmt->close();
+
+    die(
+        "Unable to load gym."
+    );
+
+}
+
 
 $result = $stmt->get_result();
 
 $gym = $result->fetch_assoc();
+
+$stmt->close();
 
 
 if (!$gym) {
@@ -51,7 +86,7 @@ if (!$gym) {
 }
 
 
-$gym_id = $gym["gym_id"];
+$gym_id = (int) $gym["gym_id"];
 
 
 /*
@@ -82,7 +117,9 @@ $search = "";
 
 if (isset($_GET["search"])) {
 
-    $search = trim($_GET["search"]);
+    $search = trim(
+        (string) $_GET["search"]
+    );
 
 }
 
@@ -91,92 +128,173 @@ if (isset($_GET["search"])) {
 |--------------------------------------------------------------------------
 | Get members + membership + current month's payment
 |--------------------------------------------------------------------------
+|
+| IMPORTANT:
+|
+| There are THREE date placeholders:
+|
+| 1. mm.start_date <= LAST_DAY(?)
+| 2. mm.end_date >= ?
+| 3. p.payment_for_month = ?
+|
+| Then:
+|
+| 4. m.gym_id = ?
+|
+| If search is used, there are TWO additional placeholders:
+|
+| 5. m.name LIKE ?
+| 6. m.phone LIKE ?
+|
+|--------------------------------------------------------------------------
 */
 
-$sql = "SELECT
+$sql = "
+    SELECT
 
-            m.member_id,
-            m.name,
-            m.phone,
-            m.status,
+        m.member_id,
+        m.name,
+        m.phone,
+        m.status,
 
-            mm.membership_id,
-            mm.start_date,
-            mm.end_date,
+        mm.membership_id,
+        mm.start_date,
+        mm.end_date,
 
-            mp.plan_name,
-            mp.price,
+        mp.plan_name,
+        mp.price,
 
-            p.payment_id,
-            p.amount AS paid_amount,
-            p.payment_date,
-            p.payment_method,
-            p.payment_status
+        p.payment_id,
+        p.amount AS paid_amount,
+        p.payment_date,
+        p.payment_method,
+        p.payment_status
 
-        FROM members m
+    FROM members m
 
-        LEFT JOIN member_memberships mm
-            ON m.member_id = mm.member_id
+    LEFT JOIN member_memberships mm
+        ON m.member_id = mm.member_id
 
-            AND mm.start_date <= LAST_DAY(?)
+        AND mm.start_date <= LAST_DAY(?)
 
-            AND mm.end_date >= ?
+        AND mm.end_date >= ?
 
-            AND mm.status = 'active'
+        AND mm.status = 'active'
 
-        LEFT JOIN membership_plans mp
-            ON mm.plan_id = mp.plan_id
+    LEFT JOIN membership_plans mp
+        ON mm.plan_id = mp.plan_id
 
-        LEFT JOIN payments p
-            ON p.member_id = m.member_id
+    LEFT JOIN payments p
+        ON p.member_id = m.member_id
 
-            AND p.membership_id = mm.membership_id
+        AND p.membership_id = mm.membership_id
 
-            AND p.payment_for_month = ?
+        AND p.payment_for_month = ?
 
-            AND p.payment_status = 'paid'
+        AND p.payment_status = 'paid'
 
-        WHERE m.gym_id = ?
+    WHERE m.gym_id = ?
 
-        AND m.status = 'active'";
+    AND m.status = 'active'
+";
 
 
 /*
 |--------------------------------------------------------------------------
-| Add search condition if needed
+| Add search condition
 |--------------------------------------------------------------------------
 */
 
 if ($search !== "") {
 
-    $sql .= " AND (
-                m.name LIKE ?
-                OR m.phone LIKE ?
-              )";
+    $sql .= "
+        AND (
+            m.name LIKE ?
+            OR m.phone LIKE ?
+        )
+    ";
 
 }
 
 
-$sql .= " ORDER BY m.name ASC";
+$sql .= "
+    ORDER BY
+        m.name ASC
+";
 
+
+/*
+|--------------------------------------------------------------------------
+| Prepare query
+|--------------------------------------------------------------------------
+*/
 
 $stmt = $conn->prepare($sql);
 
 
+if (!$stmt) {
+
+    die(
+        "Database error: " .
+        htmlspecialchars($conn->error)
+    );
+
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| Bind parameters
+|--------------------------------------------------------------------------
+|
+| WITHOUT SEARCH:
+|
+| s = current month
+| s = current month
+| s = current month
+| i = gym ID
+|
+| Therefore:
+|
+| "sssi"
+|
+|
+| WITH SEARCH:
+|
+| s = current month
+| s = current month
+| s = current month
+| i = gym ID
+| s = search
+| s = search
+|
+| Therefore:
+|
+| "sssiss"
+|
+|--------------------------------------------------------------------------
+*/
+
 if ($search !== "") {
 
-    $search_value = "%" . $search . "%";
+    $search_value =
+        "%" .
+        $search .
+        "%";
+
 
     $stmt->bind_param(
-        "sssis",
+        "sssiss",
         $current_month,
         $current_month,
         $current_month,
         $gym_id,
+        $search_value,
         $search_value
     );
 
-} else {
+}
+else {
 
     $stmt->bind_param(
         "sssi",
@@ -189,9 +307,25 @@ if ($search !== "") {
 }
 
 
-$stmt->execute();
+/*
+|--------------------------------------------------------------------------
+| Execute
+|--------------------------------------------------------------------------
+*/
 
-$payments = $stmt->get_result();
+if (!$stmt->execute()) {
+
+    $stmt->close();
+
+    die(
+        "Unable to load payment records."
+    );
+
+}
+
+
+$payments =
+    $stmt->get_result();
 
 
 /*
@@ -201,44 +335,84 @@ $payments = $stmt->get_result();
 */
 
 $paid_count = 0;
+
 $unpaid_count = 0;
+
 $total_expected = 0;
+
 $total_collected = 0;
 
 $rows = [];
 
 
-while ($row = $payments->fetch_assoc()) {
+while (
+    $row =
+    $payments->fetch_assoc()
+) {
 
     $rows[] = $row;
 
 
+    /*
+    |--------------------------------------------------------------------------
+    | PAID
+    |--------------------------------------------------------------------------
+    */
+
     if (
         $row["payment_id"] !== null &&
-        $row["payment_status"] === "paid"
+        strtolower(
+            trim(
+                (string)
+                $row["payment_status"]
+            )
+        ) === "paid"
     ) {
 
         $paid_count++;
 
-        $total_collected +=
-            (float) $row["paid_amount"];
 
-    } else {
+        $total_collected +=
+            (float)
+            $row["paid_amount"];
+
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | UNPAID
+    |--------------------------------------------------------------------------
+    */
+
+    elseif (
+        $row["membership_id"] !== null
+    ) {
 
         $unpaid_count++;
 
     }
 
 
-    if ($row["price"] !== null) {
+    /*
+    |--------------------------------------------------------------------------
+    | EXPECTED
+    |--------------------------------------------------------------------------
+    */
+
+    if (
+        $row["price"] !== null
+    ) {
 
         $total_expected +=
-            (float) $row["price"];
+            (float)
+            $row["price"];
 
     }
 
 }
 
+
+$stmt->close();
 
 ?>
 
@@ -257,10 +431,25 @@ while ($row = $payments->fetch_assoc()) {
     >
 
     <title>
-        Payments - <?php echo htmlspecialchars($gym["gym_name"]); ?>
+
+        Payments -
+
+        <?php
+
+        echo htmlspecialchars(
+            $gym["gym_name"]
+        );
+
+        ?>
+
     </title>
 
-    <link rel = "stylesheet" href = "css/payments.css">
+
+    <link
+        rel="stylesheet"
+        href="css/payments.css"
+    >
+
 </head>
 
 
@@ -270,31 +459,49 @@ while ($row = $payments->fetch_assoc()) {
 <div class="container">
 
 
-    <!-- HEADER -->
+    <!--
+    |--------------------------------------------------------------------------
+    | HEADER
+    |--------------------------------------------------------------------------
+    -->
+
 
     <div class="header">
+
 
         <div>
 
             <h1>
-                <img src = "images/debit-card.png" alt = "debit" class = "stat-icon">
-            Payments
+
+                <img
+                    src="images/debit-card.png"
+                    alt="debit"
+                    class="stat-icon"
+                >
+
+                Payments
+
             </h1>
+
 
             <p>
 
                 <?php
+
                 echo htmlspecialchars(
                     $gym["gym_name"]
                 );
+
                 ?>
 
                 —
-                
+
                 <?php
+
                 echo htmlspecialchars(
                     $current_month_name
                 );
+
                 ?>
 
             </p>
@@ -315,21 +522,33 @@ while ($row = $payments->fetch_assoc()) {
 
 
 
-    <!-- SUMMARY -->
+    <!--
+    |--------------------------------------------------------------------------
+    | SUMMARY
+    |--------------------------------------------------------------------------
+    -->
+
 
     <div class="summary">
 
 
+        <!-- PAID MEMBERS -->
+
         <div class="summary-card">
 
             <div class="summary-title">
+
                 Paid Members
+
             </div>
+
 
             <div class="summary-number paid">
 
                 <?php
+
                 echo $paid_count;
+
                 ?>
 
             </div>
@@ -337,16 +556,24 @@ while ($row = $payments->fetch_assoc()) {
         </div>
 
 
+
+        <!-- UNPAID MEMBERS -->
+
         <div class="summary-card">
 
             <div class="summary-title">
+
                 Unpaid Members
+
             </div>
+
 
             <div class="summary-number unpaid">
 
                 <?php
+
                 echo $unpaid_count;
+
                 ?>
 
             </div>
@@ -354,21 +581,29 @@ while ($row = $payments->fetch_assoc()) {
         </div>
 
 
+
+        <!-- EXPECTED -->
+
         <div class="summary-card">
 
             <div class="summary-title">
+
                 Expected
+
             </div>
+
 
             <div class="summary-number">
 
                 Rs.
 
                 <?php
+
                 echo number_format(
                     $total_expected,
                     2
                 );
+
                 ?>
 
             </div>
@@ -376,21 +611,29 @@ while ($row = $payments->fetch_assoc()) {
         </div>
 
 
+
+        <!-- COLLECTED -->
+
         <div class="summary-card">
 
             <div class="summary-title">
+
                 Collected
+
             </div>
+
 
             <div class="summary-number paid">
 
                 Rs.
 
                 <?php
+
                 echo number_format(
                     $total_collected,
                     2
                 );
+
                 ?>
 
             </div>
@@ -402,18 +645,29 @@ while ($row = $payments->fetch_assoc()) {
 
 
 
-    <!-- SEARCH -->
+    <!--
+    |--------------------------------------------------------------------------
+    | SEARCH
+    |--------------------------------------------------------------------------
+    -->
+
 
     <div class="search-box">
 
+
         <form method="GET">
+
 
             <input
                 type="text"
                 name="search"
                 placeholder="Search member by name or phone..."
                 value="<?php
-                    echo htmlspecialchars($search);
+
+                    echo htmlspecialchars(
+                        $search
+                    );
+
                 ?>"
             >
 
@@ -428,7 +682,10 @@ while ($row = $payments->fetch_assoc()) {
             </button>
 
 
-            <?php if ($search !== ""): ?>
+            <?php if (
+                $search !== ""
+            ): ?>
+
 
                 <a
                     href="payments.php"
@@ -439,22 +696,34 @@ while ($row = $payments->fetch_assoc()) {
 
                 </a>
 
+
             <?php endif; ?>
 
+
         </form>
+
 
     </div>
 
 
 
-    <!-- PAYMENT TABLE -->
+    <!--
+    |--------------------------------------------------------------------------
+    | PAYMENT TABLE
+    |--------------------------------------------------------------------------
+    -->
+
 
     <div class="table-card">
 
-        <?php if (count($rows) > 0): ?>
+
+        <?php if (
+            count($rows) > 0
+        ): ?>
 
 
             <table>
+
 
                 <thead>
 
@@ -496,19 +765,29 @@ while ($row = $payments->fetch_assoc()) {
                 <tbody>
 
 
-                <?php foreach ($rows as $row): ?>
+                <?php foreach (
+                    $rows as $row
+                ): ?>
 
 
                     <tr>
 
 
-                        <!-- MEMBER -->
+                        <!--
+                        ------------------------------------------------------
+                        MEMBER
+                        ------------------------------------------------------
+                        -->
+
 
                         <td>
 
                             <a
                                 href="member_details.php?id=<?php
-                                    echo $row["member_id"];
+
+                                    echo (int)
+                                        $row["member_id"];
+
                                 ?>"
                                 class="member-button"
                             >
@@ -526,14 +805,21 @@ while ($row = $payments->fetch_assoc()) {
                         </td>
 
 
-                        <!-- PHONE -->
+
+                        <!--
+                        ------------------------------------------------------
+                        PHONE
+                        ------------------------------------------------------
+                        -->
+
 
                         <td>
 
                             <?php
 
                             echo htmlspecialchars(
-                                $row["phone"] ?? "-"
+                                $row["phone"] ??
+                                "-"
                             );
 
                             ?>
@@ -541,11 +827,21 @@ while ($row = $payments->fetch_assoc()) {
                         </td>
 
 
-                        <!-- PLAN -->
+
+                        <!--
+                        ------------------------------------------------------
+                        PLAN
+                        ------------------------------------------------------
+                        -->
+
 
                         <td>
 
-                            <?php if ($row["plan_name"]): ?>
+
+                            <?php if (
+                                $row["plan_name"]
+                            ): ?>
+
 
                                 <?php
 
@@ -555,52 +851,85 @@ while ($row = $payments->fetch_assoc()) {
 
                                 ?>
 
+
                             <?php else: ?>
 
-                                <span class="no-membership">
+
+                                <span
+                                    class="no-membership"
+                                >
 
                                     No Membership
 
                                 </span>
 
+
                             <?php endif; ?>
+
 
                         </td>
 
 
-                        <!-- FEE -->
+
+                        <!--
+                        ------------------------------------------------------
+                        FEE
+                        ------------------------------------------------------
+                        -->
+
 
                         <td>
 
-                            <?php if ($row["price"] !== null): ?>
+
+                            <?php if (
+                                $row["price"] !== null
+                            ): ?>
+
 
                                 Rs.
 
                                 <?php
 
                                 echo number_format(
+                                    (float)
                                     $row["price"],
                                     2
                                 );
 
                                 ?>
 
+
                             <?php else: ?>
+
 
                                 -
 
+
                             <?php endif; ?>
+
 
                         </td>
 
 
-                        <!-- STATUS -->
+
+                        <!--
+                        ------------------------------------------------------
+                        STATUS
+                        ------------------------------------------------------
+                        -->
+
 
                         <td>
 
 
                             <?php if (
-                                $row["payment_id"] !== null
+                                $row["payment_id"] !== null &&
+                                strtolower(
+                                    trim(
+                                        (string)
+                                        $row["payment_status"]
+                                    )
+                                ) === "paid"
                             ): ?>
 
 
@@ -626,7 +955,9 @@ while ($row = $payments->fetch_assoc()) {
                             <?php else: ?>
 
 
-                                <span class="no-membership">
+                                <span
+                                    class="no-membership"
+                                >
 
                                     No Plan
 
@@ -639,31 +970,58 @@ while ($row = $payments->fetch_assoc()) {
                         </td>
 
 
-                        <!-- PAYMENT DATE -->
+
+                        <!--
+                        ------------------------------------------------------
+                        PAYMENT DATE
+                        ------------------------------------------------------
+                        -->
+
 
                         <td>
 
 
                             <?php if (
-                                $row["payment_date"]
+                                !empty(
+                                    $row["payment_date"]
+                                )
                             ): ?>
 
 
                                 <?php
 
-                                echo date(
-                                    "d M Y, h:i A",
+                                $payment_timestamp =
                                     strtotime(
                                         $row["payment_date"]
-                                    )
-                                );
+                                    );
+
+
+                                if (
+                                    $payment_timestamp
+                                ) {
+
+                                    echo htmlspecialchars(
+                                        date(
+                                            "d M Y, h:i A",
+                                            $payment_timestamp
+                                        )
+                                    );
+
+                                }
+                                else {
+
+                                    echo "-";
+
+                                }
 
                                 ?>
 
 
                             <?php else: ?>
 
+
                                 -
+
 
                             <?php endif; ?>
 
@@ -671,25 +1029,45 @@ while ($row = $payments->fetch_assoc()) {
                         </td>
 
 
-                        <!-- ACTION -->
+
+                        <!--
+                        ------------------------------------------------------
+                        ACTION
+                        ------------------------------------------------------
+                        -->
+
 
                         <td>
 
 
                             <?php if (
-                                $row["payment_id"] !== null
+                                $row["payment_id"] !== null &&
+                                strtolower(
+                                    trim(
+                                        (string)
+                                        $row["payment_status"]
+                                    )
+                                ) === "paid"
                             ): ?>
 
 
                                 <a
                                     href="payment_receipt.php?id=<?php
-                                        echo $row["payment_id"];
+
+                                        echo (int)
+                                            $row["payment_id"];
+
                                     ?>"
                                     target="_blank"
                                     class="receipt-button"
                                 >
 
-                                     <img src = "images/receipt.png" alt = "receipt" class = "stat-icon">
+                                    <img
+                                        src="images/receipt.png"
+                                        alt="receipt"
+                                        class="stat-icon"
+                                    >
+
                                     Receipt
 
                                 </a>
@@ -702,7 +1080,10 @@ while ($row = $payments->fetch_assoc()) {
 
                                 <a
                                     href="record_payment.php?member_id=<?php
-                                        echo $row["member_id"];
+
+                                        echo (int)
+                                            $row["member_id"];
+
                                     ?>"
                                     class="pay-button"
                                 >
@@ -714,7 +1095,9 @@ while ($row = $payments->fetch_assoc()) {
 
                             <?php else: ?>
 
+
                                 -
+
 
                             <?php endif; ?>
 
@@ -729,6 +1112,7 @@ while ($row = $payments->fetch_assoc()) {
 
 
                 </tbody>
+
 
             </table>
 
