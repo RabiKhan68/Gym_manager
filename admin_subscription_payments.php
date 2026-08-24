@@ -42,18 +42,25 @@ if (!isset($_SESSION["admin_id"])) {
 |
 | IMPORTANT:
 |
-| A payment can exist BEFORE a subscription is created.
+| The correct payment table is:
+|
+| owner_subscription_payments
+|
+| A payment may exist before a subscription is created.
 |
 | Therefore:
 |
-| p.subscription_id may be NULL.
+| p.subscription_id can be NULL.
 |
-| We get the selected plan directly from:
+| The plan is obtained directly from:
 |
 | p.subscription_plan_id
 |
-| The subscription table is LEFT JOINed because the subscription
-| may not exist yet.
+| subscription_plans is INNER JOINed because every payment
+| should have a valid subscription plan.
+|
+| gym_owner_subscriptions is LEFT JOINed because the
+| subscription may not have been created yet.
 |
 |--------------------------------------------------------------------------
 */
@@ -77,17 +84,17 @@ $sql = "
         o.email AS owner_email,
         o.phone AS owner_phone,
 
-        s.start_date,
-        s.end_date,
-        s.status AS subscription_status,
-
         sp.plan_name,
         sp.price,
         sp.member_limit,
 
+        s.start_date,
+        s.end_date,
+        s.status AS subscription_status,
+
         g.gym_name
 
-    FROM gym_owner_subscription_payments p
+    FROM owner_subscription_payments p
 
     INNER JOIN gym_owners o
         ON p.owner_id = o.owner_id
@@ -108,8 +115,7 @@ $sql = "
 ";
 
 
-$result =
-    $conn->query($sql);
+$result = $conn->query($sql);
 
 
 if (!$result) {
@@ -146,8 +152,7 @@ while (
     $result->fetch_assoc()
 ) {
 
-    $payments[] =
-        $row;
+    $payments[] = $row;
 
 
     /*
@@ -157,11 +162,15 @@ while (
     */
 
     if (
-        $row["payment_status"] === "paid"
+        strtolower(
+            trim(
+                (string)
+                $row["payment_status"]
+            )
+        ) === "paid"
     ) {
 
         $paid_count++;
-
 
         $total_revenue +=
             (float)
@@ -177,7 +186,12 @@ while (
     */
 
     elseif (
-        $row["payment_status"] === "submitted"
+        strtolower(
+            trim(
+                (string)
+                $row["payment_status"]
+            )
+        ) === "submitted"
     ) {
 
         $submitted_count++;
@@ -192,7 +206,12 @@ while (
     */
 
     elseif (
-        $row["payment_status"] === "pending"
+        strtolower(
+            trim(
+                (string)
+                $row["payment_status"]
+            )
+        ) === "pending"
     ) {
 
         $pending_count++;
@@ -207,7 +226,12 @@ while (
     */
 
     elseif (
-        $row["payment_status"] === "failed"
+        strtolower(
+            trim(
+                (string)
+                $row["payment_status"]
+            )
+        ) === "failed"
     ) {
 
         $failed_count++;
@@ -249,6 +273,7 @@ while (
 
             font-family:
                 Arial,
+                Helvetica,
                 sans-serif;
 
             background: #f4f6f8;
@@ -269,11 +294,7 @@ while (
         }
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | HEADER
-        |--------------------------------------------------------------------------
-        */
+        /* HEADER */
 
         .header {
 
@@ -284,9 +305,9 @@ while (
 
             align-items: center;
 
-            margin-bottom: 25px;
-
             gap: 20px;
+
+            margin-bottom: 25px;
 
         }
 
@@ -332,16 +353,34 @@ while (
 
         .back:hover {
 
-            opacity: 0.85;
+            opacity: .85;
 
         }
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | SUMMARY
-        |--------------------------------------------------------------------------
-        */
+        /* INFO */
+
+        .info {
+
+            margin-bottom: 20px;
+
+            padding: 15px 18px;
+
+            background: #eff6ff;
+
+            border:
+                1px solid #bfdbfe;
+
+            border-radius: 10px;
+
+            color: #1e40af;
+
+            line-height: 1.5;
+
+        }
+
+
+        /* SUMMARY */
 
         .summary {
 
@@ -367,7 +406,7 @@ while (
 
             box-shadow:
                 0 3px 12px
-                rgba(0, 0, 0, 0.06);
+                rgba(0, 0, 0, .06);
 
         }
 
@@ -392,11 +431,7 @@ while (
         }
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | TABLE CARD
-        |--------------------------------------------------------------------------
-        */
+        /* TABLE CARD */
 
         .card {
 
@@ -408,7 +443,7 @@ while (
 
             box-shadow:
                 0 3px 12px
-                rgba(0, 0, 0, 0.06);
+                rgba(0, 0, 0, .06);
 
             overflow-x: auto;
 
@@ -419,8 +454,7 @@ while (
 
             width: 100%;
 
-            border-collapse:
-                collapse;
+            border-collapse: collapse;
 
             min-width: 1500px;
 
@@ -460,11 +494,7 @@ while (
         }
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | OWNER
-        |--------------------------------------------------------------------------
-        */
+        /* OWNER */
 
         .owner {
 
@@ -491,11 +521,7 @@ while (
         }
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | GYM / PLAN
-        |--------------------------------------------------------------------------
-        */
+        /* GYM */
 
         .gym {
 
@@ -503,6 +529,8 @@ while (
 
         }
 
+
+        /* PLAN */
 
         .plan {
 
@@ -522,11 +550,7 @@ while (
         }
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | AMOUNT
-        |--------------------------------------------------------------------------
-        */
+        /* AMOUNT */
 
         .amount {
 
@@ -537,11 +561,7 @@ while (
         }
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | DATE
-        |--------------------------------------------------------------------------
-        */
+        /* DATE */
 
         .date {
 
@@ -552,11 +572,7 @@ while (
         }
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | PAYMENT STATUS
-        |--------------------------------------------------------------------------
-        */
+        /* PAYMENT STATUS */
 
         .status {
 
@@ -611,11 +627,7 @@ while (
         }
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | SUBSCRIPTION STATUS
-        |--------------------------------------------------------------------------
-        */
+        /* SUBSCRIPTION */
 
         .subscription-status {
 
@@ -679,20 +691,28 @@ while (
         }
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | TRANSACTION
-        |--------------------------------------------------------------------------
-        */
+        .subscription-details {
 
-        .transaction {
+            margin-top: 7px;
 
-            font-family:
-                monospace;
+            color: #6b7280;
 
             font-size: 13px;
 
-            max-width: 260px;
+            line-height: 1.5;
+
+        }
+
+
+        /* TRANSACTION */
+
+        .transaction {
+
+            font-family: monospace;
+
+            font-size: 13px;
+
+            max-width: 280px;
 
             word-break: break-all;
 
@@ -701,7 +721,7 @@ while (
 
         .gateway {
 
-            margin-top: 6px;
+            margin-top: 7px;
 
             color: #6b7280;
 
@@ -710,30 +730,7 @@ while (
         }
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | SUBSCRIPTION DETAILS
-        |--------------------------------------------------------------------------
-        */
-
-        .subscription-details {
-
-            font-size: 13px;
-
-            color: #4b5563;
-
-            margin-top: 7px;
-
-            line-height: 1.5;
-
-        }
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | EMPTY
-        |--------------------------------------------------------------------------
-        */
+        /* EMPTY */
 
         .empty {
 
@@ -746,37 +743,7 @@ while (
         }
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | INFO NOTICE
-        |--------------------------------------------------------------------------
-        */
-
-        .info {
-
-            margin-bottom: 20px;
-
-            padding: 14px 16px;
-
-            border-radius: 9px;
-
-            background: #eff6ff;
-
-            border:
-                1px solid #bfdbfe;
-
-            color: #1e40af;
-
-            line-height: 1.5;
-
-        }
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | RESPONSIVE
-        |--------------------------------------------------------------------------
-        */
+        /* RESPONSIVE */
 
         @media (max-width: 1200px) {
 
@@ -817,8 +784,6 @@ while (
 
                 align-items: flex-start;
 
-                gap: 15px;
-
             }
 
 
@@ -841,22 +806,15 @@ while (
 <div class="container">
 
 
-    <!--
-    |--------------------------------------------------------------------------
-    | HEADER
-    |--------------------------------------------------------------------------
-    -->
-
+    <!-- HEADER -->
 
     <div class="header">
-
 
         <div>
 
             <h1>
                 Subscription Payments
             </h1>
-
 
             <p>
                 Monitor payments made by gym owners
@@ -869,22 +827,13 @@ while (
             href="admin_dashboard.php"
             class="back"
         >
-
             ← Dashboard
-
         </a>
-
 
     </div>
 
 
-
-    <!--
-    |--------------------------------------------------------------------------
-    | INFORMATION
-    |--------------------------------------------------------------------------
-    -->
-
+    <!-- INFO -->
 
     <div class="info">
 
@@ -897,30 +846,21 @@ while (
         are waiting for administrator verification.
 
         A submitted payment does not automatically mean
-        the subscription has been created.
+        that the subscription has been created.
 
     </div>
 
 
-
-    <!--
-    |--------------------------------------------------------------------------
-    | SUMMARY
-    |--------------------------------------------------------------------------
-    -->
-
+    <!-- SUMMARY -->
 
     <div class="summary">
 
-
-        <!-- TOTAL REVENUE -->
 
         <div class="summary-card">
 
             <div class="summary-title">
                 Total Revenue
             </div>
-
 
             <div class="summary-number">
 
@@ -940,31 +880,22 @@ while (
         </div>
 
 
-
-        <!-- PAID -->
-
         <div class="summary-card">
 
             <div class="summary-title">
                 Paid Payments
             </div>
 
-
             <div class="summary-number">
 
                 <?php
-
                 echo $paid_count;
-
                 ?>
 
             </div>
 
         </div>
 
-
-
-        <!-- SUBMITTED -->
 
         <div class="summary-card">
 
@@ -972,22 +903,16 @@ while (
                 Submitted Payments
             </div>
 
-
             <div class="summary-number">
 
                 <?php
-
                 echo $submitted_count;
-
                 ?>
 
             </div>
 
         </div>
 
-
-
-        <!-- PENDING -->
 
         <div class="summary-card">
 
@@ -995,13 +920,10 @@ while (
                 Pending Payments
             </div>
 
-
             <div class="summary-number">
 
                 <?php
-
                 echo $pending_count;
-
                 ?>
 
             </div>
@@ -1009,22 +931,16 @@ while (
         </div>
 
 
-
-        <!-- FAILED -->
-
         <div class="summary-card">
 
             <div class="summary-title">
                 Failed Payments
             </div>
 
-
             <div class="summary-number">
 
                 <?php
-
                 echo $failed_count;
-
                 ?>
 
             </div>
@@ -1035,13 +951,7 @@ while (
     </div>
 
 
-
-    <!--
-    |--------------------------------------------------------------------------
-    | PAYMENTS
-    |--------------------------------------------------------------------------
-    -->
-
+    <!-- PAYMENTS -->
 
     <div class="card">
 
@@ -1052,7 +962,6 @@ while (
 
 
             <table>
-
 
                 <thead>
 
@@ -1107,76 +1016,56 @@ while (
                 </thead>
 
 
-
                 <tbody>
 
 
                 <?php foreach (
-                    $payments
-                    as $payment
+                    $payments as $payment
                 ): ?>
 
 
                     <tr>
 
 
-                        <!--
-                        ------------------------------------------------------
-                        PAYMENT ID
-                        ------------------------------------------------------
-                        -->
-
+                        <!-- PAYMENT ID -->
 
                         <td>
 
                             <?php
-
                             echo (int)
                                 $payment[
                                     "payment_id"
                                 ];
-
                             ?>
 
                         </td>
 
 
-
-                        <!--
-                        ------------------------------------------------------
-                        OWNER
-                        ------------------------------------------------------
-                        -->
-
+                        <!-- OWNER -->
 
                         <td>
 
                             <div class="owner">
 
                                 <?php
-
                                 echo e(
                                     $payment[
                                         "owner_name"
                                     ]
                                 );
-
                                 ?>
 
                             </div>
 
-
                             <div class="phone">
 
                                 <?php
-
                                 echo e(
                                     $payment[
                                         "owner_phone"
                                     ] ??
                                     "-"
                                 );
-
                                 ?>
 
                             </div>
@@ -1184,26 +1073,18 @@ while (
                         </td>
 
 
-
-                        <!--
-                        ------------------------------------------------------
-                        EMAIL
-                        ------------------------------------------------------
-                        -->
-
+                        <!-- EMAIL -->
 
                         <td>
 
                             <div class="email">
 
                                 <?php
-
                                 echo e(
                                     $payment[
                                         "owner_email"
                                     ]
                                 );
-
                                 ?>
 
                             </div>
@@ -1211,54 +1092,37 @@ while (
                         </td>
 
 
-
-                        <!--
-                        ------------------------------------------------------
-                        GYM
-                        ------------------------------------------------------
-                        -->
-
+                        <!-- GYM -->
 
                         <td class="gym">
 
                             <?php
-
                             echo e(
                                 $payment[
                                     "gym_name"
                                 ] ??
                                 "No gym"
                             );
-
                             ?>
 
                         </td>
 
 
-
-                        <!--
-                        ------------------------------------------------------
-                        PACKAGE
-                        ------------------------------------------------------
-                        -->
-
+                        <!-- PLAN -->
 
                         <td>
 
                             <div class="plan">
 
                                 <?php
-
                                 echo e(
                                     $payment[
                                         "plan_name"
                                     ]
                                 );
-
                                 ?>
 
                             </div>
-
 
                             <div class="plan-limit">
 
@@ -1295,13 +1159,7 @@ while (
                         </td>
 
 
-
-                        <!--
-                        ------------------------------------------------------
-                        AMOUNT
-                        ------------------------------------------------------
-                        -->
-
+                        <!-- AMOUNT -->
 
                         <td class="amount">
 
@@ -1322,24 +1180,11 @@ while (
                         </td>
 
 
-
-                        <!--
-                        ------------------------------------------------------
-                        PAYMENT DATE
-                        ------------------------------------------------------
-                        -->
-
+                        <!-- PAYMENT DATE -->
 
                         <td class="date">
 
                             <?php
-
-                            /*
-                            |--------------------------------------------------
-                            | Prefer payment_date.
-                            | If it is NULL, use created_at.
-                            |--------------------------------------------------
-                            */
 
                             $display_date = null;
 
@@ -1410,13 +1255,7 @@ while (
                         </td>
 
 
-
-                        <!--
-                        ------------------------------------------------------
-                        PAYMENT METHOD
-                        ------------------------------------------------------
-                        -->
-
+                        <!-- PAYMENT METHOD -->
 
                         <td>
 
@@ -1440,16 +1279,9 @@ while (
                         </td>
 
 
-
-                        <!--
-                        ------------------------------------------------------
-                        PAYMENT STATUS
-                        ------------------------------------------------------
-                        -->
-
+                        <!-- PAYMENT STATUS -->
 
                         <td>
-
 
                             <?php
 
@@ -1464,19 +1296,12 @@ while (
                                 );
 
 
-                            /*
-                            |--------------------------------------------------
-                            | Only allow known CSS status classes.
-                            |--------------------------------------------------
-                            */
-
                             $payment_status_class =
                                 "pending";
 
 
                             if (
-                                $payment_status ===
-                                "paid"
+                                $payment_status === "paid"
                             ) {
 
                                 $payment_status_class =
@@ -1493,8 +1318,7 @@ while (
 
                             }
                             elseif (
-                                $payment_status ===
-                                "failed"
+                                $payment_status === "failed"
                             ) {
 
                                 $payment_status_class =
@@ -1506,7 +1330,12 @@ while (
 
 
                             <span
-                                class="status <?php echo $payment_status_class; ?>"
+                                class="
+                                status
+                                <?php
+                                echo $payment_status_class;
+                                ?>
+                                "
                             >
 
                                 <?php
@@ -1521,28 +1350,14 @@ while (
 
                             </span>
 
-
                         </td>
 
 
-
-                        <!--
-                        ------------------------------------------------------
-                        SUBSCRIPTION
-                        ------------------------------------------------------
-                        -->
-
+                        <!-- SUBSCRIPTION -->
 
                         <td>
 
-
                             <?php
-
-                            /*
-                            |--------------------------------------------------
-                            | No subscription yet
-                            |--------------------------------------------------
-                            */
 
                             if (
                                 empty(
@@ -1550,10 +1365,9 @@ while (
                                         "subscription_id"
                                     ]
                                 )
-                            ) {
+                            ):
 
-
-                                ?>
+                            ?>
 
                                 <span
                                     class="
@@ -1561,34 +1375,27 @@ while (
                                     subscription-not-created
                                     "
                                 >
-
                                     Not Created Yet
-
                                 </span>
 
 
                                 <div
-                                    class="subscription-details"
+                                    class="
+                                    subscription-details
+                                    "
                                 >
 
-                                    Payment is waiting for
-                                    administrator verification.
+                                    Waiting for
+                                    administrator
+                                    verification.
 
                                 </div>
 
 
-                            <?php
+                            <?php else: ?>
 
-                            }
 
-                            /*
-                            |--------------------------------------------------
-                            | Subscription exists
-                            |--------------------------------------------------
-                            */
-
-                            else {
-
+                                <?php
 
                                 $subscription_status =
                                     strtolower(
@@ -1605,40 +1412,40 @@ while (
                                     "subscription-not-created";
 
 
-                                if (
-                                    $subscription_status ===
-                                    "active"
+                                switch (
+                                    $subscription_status
                                 ) {
 
-                                    $subscription_class =
-                                        "subscription-active";
+                                    case "active":
 
-                                }
-                                elseif (
-                                    $subscription_status ===
-                                    "scheduled"
-                                ) {
+                                        $subscription_class =
+                                            "subscription-active";
 
-                                    $subscription_class =
-                                        "subscription-scheduled";
+                                        break;
 
-                                }
-                                elseif (
-                                    $subscription_status ===
-                                    "expired"
-                                ) {
 
-                                    $subscription_class =
-                                        "subscription-expired";
+                                    case "scheduled":
 
-                                }
-                                elseif (
-                                    $subscription_status ===
-                                    "cancelled"
-                                ) {
+                                        $subscription_class =
+                                            "subscription-scheduled";
 
-                                    $subscription_class =
-                                        "subscription-cancelled";
+                                        break;
+
+
+                                    case "expired":
+
+                                        $subscription_class =
+                                            "subscription-expired";
+
+                                        break;
+
+
+                                    case "cancelled":
+
+                                        $subscription_class =
+                                            "subscription-cancelled";
+
+                                        break;
 
                                 }
 
@@ -1675,7 +1482,6 @@ while (
                                     )
                                 ): ?>
 
-
                                     <div
                                         class="
                                         subscription-details
@@ -1694,23 +1500,14 @@ while (
                                             );
 
 
-                                        if (
-                                            $start_timestamp
-                                        ) {
-
-                                            echo e(
+                                        echo $start_timestamp
+                                            ? e(
                                                 date(
                                                     "d M Y",
                                                     $start_timestamp
                                                 )
-                                            );
-
-                                        }
-                                        else {
-
-                                            echo "-";
-
-                                        }
+                                            )
+                                            : "-";
 
                                         ?>
 
@@ -1730,61 +1527,36 @@ while (
                                             );
 
 
-                                        if (
-                                            $end_timestamp
-                                        ) {
-
-                                            echo e(
+                                        echo $end_timestamp
+                                            ? e(
                                                 date(
                                                     "d M Y",
                                                     $end_timestamp
                                                 )
-                                            );
-
-                                        }
-                                        else {
-
-                                            echo "-";
-
-                                        }
+                                            )
+                                            : "-";
 
                                         ?>
 
                                     </div>
 
-
                                 <?php endif; ?>
 
 
-                            <?php
-
-                            }
-
-                            ?>
-
+                            <?php endif; ?>
 
                         </td>
 
 
-
-                        <!--
-                        ------------------------------------------------------
-                        TRANSACTION
-                        ------------------------------------------------------
-                        -->
-
+                        <!-- TRANSACTION -->
 
                         <td class="transaction">
 
+                            <strong>
+                                Owner Reference:
+                            </strong>
 
-                            <div>
-
-                                <strong>
-                                    Owner Reference:
-                                </strong>
-
-                            </div>
-
+                            <br>
 
                             <?php
 
@@ -1806,10 +1578,7 @@ while (
                                 )
                             ): ?>
 
-
-                                <div
-                                    class="gateway"
-                                >
+                                <div class="gateway">
 
                                     <strong>
                                         Gateway:
@@ -1827,9 +1596,7 @@ while (
 
                                 </div>
 
-
                             <?php endif; ?>
-
 
                         </td>
 
@@ -1841,7 +1608,6 @@ while (
 
 
                 </tbody>
-
 
             </table>
 
@@ -1855,12 +1621,9 @@ while (
                     No Subscription Payments Yet
                 </h2>
 
-
                 <p>
-
                     Gym owners have not made any
                     subscription payments.
-
                 </p>
 
             </div>
