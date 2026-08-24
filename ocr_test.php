@@ -1,33 +1,18 @@
 <?php
 
-session_start();
-
 require_once __DIR__ . "/vendor/autoload.php";
 
-use Google\Cloud\Vision\V1\ImageAnnotatorClient;
+use Google\Cloud\Vision\V1\Client\ImageAnnotatorClient;
 
 
-/*
-|--------------------------------------------------------------------------
-| TEST GOOGLE VISION CONNECTION
-|--------------------------------------------------------------------------
-|
-| The Google JSON credentials are stored in Render as:
-|
-| GOOGLE_APPLICATION_CREDENTIALS_JSON
-|
-| We temporarily create the credentials file so the Google client can
-| authenticate without putting the JSON key inside GitHub.
-|
-|--------------------------------------------------------------------------
-*/
+echo "<h1>Google Vision Connection Test</h1>";
 
 
 try {
 
     /*
     |--------------------------------------------------------------------------
-    | Get credentials from Render
+    | Get Google credentials from Render
     |--------------------------------------------------------------------------
     */
 
@@ -49,23 +34,50 @@ try {
 
     /*
     |--------------------------------------------------------------------------
+    | Validate JSON
+    |--------------------------------------------------------------------------
+    */
+
+    $credentials =
+        json_decode(
+            $credentials_json,
+            true
+        );
+
+
+    if (
+        !is_array($credentials)
+    ) {
+
+        throw new Exception(
+            "Google credentials contain invalid JSON."
+        );
+
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
     | Create temporary credentials file
     |--------------------------------------------------------------------------
     */
 
     $credentials_file =
         sys_get_temp_dir() .
-        "/google-vision-" .
+        DIRECTORY_SEPARATOR .
+        "google-vision-" .
         uniqid() .
         ".json";
 
 
-    if (
+    $written =
         file_put_contents(
             $credentials_file,
             $credentials_json
-        ) === false
-    ) {
+        );
+
+
+    if ($written === false) {
 
         throw new Exception(
             "Could not create temporary Google credentials file."
@@ -76,7 +88,7 @@ try {
 
     /*
     |--------------------------------------------------------------------------
-    | Tell Google libraries where credentials are
+    | Tell Google client where credentials are
     |--------------------------------------------------------------------------
     */
 
@@ -98,15 +110,26 @@ try {
 
     /*
     |--------------------------------------------------------------------------
-    | Test successful authentication
+    | Success
     |--------------------------------------------------------------------------
     */
 
-    echo "<h1>Google Vision Connection Test</h1>";
-
-    echo "<p style='color: green; font-weight: bold;'>";
+    echo "<p style='
+        color: green;
+        font-weight: bold;
+        font-size: 18px;
+    '>";
 
     echo "✓ Google Vision client initialized successfully.";
+
+    echo "</p>";
+
+
+    echo "<p>";
+
+    echo "Google Vision PHP package is installed and the ";
+
+    echo "service account credentials were loaded.";
 
     echo "</p>";
 
@@ -145,7 +168,7 @@ catch (Throwable $e) {
 
     /*
     |--------------------------------------------------------------------------
-    | Delete temporary credentials if they exist
+    | Delete temporary credentials
     |--------------------------------------------------------------------------
     */
 
@@ -163,20 +186,27 @@ catch (Throwable $e) {
 
     /*
     |--------------------------------------------------------------------------
-    | Display safe error
+    | Error
     |--------------------------------------------------------------------------
     */
 
-    echo "<h1>Google Vision Connection Test</h1>";
-
-    echo "<p style='color: red; font-weight: bold;'>";
+    echo "<p style='
+        color: red;
+        font-weight: bold;
+        font-size: 18px;
+    '>";
 
     echo "✗ Google Vision connection failed.";
 
     echo "</p>";
 
 
-    echo "<pre>";
+    echo "<pre style='
+        background: #f4f4f4;
+        padding: 15px;
+        border-radius: 8px;
+        white-space: pre-wrap;
+    '>";
 
     echo htmlspecialchars(
         $e->getMessage(),
