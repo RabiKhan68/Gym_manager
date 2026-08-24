@@ -154,6 +154,28 @@ if ($result) {
 
 }
 
+/*
+|--------------------------------------------------------------------------
+| Pending subscription payment notifications
+|--------------------------------------------------------------------------
+*/
+
+$sql = "SELECT COUNT(*) AS total
+        FROM payments
+        WHERE payment_status = 'submitted'";
+
+$result = $conn->query($sql);
+
+$pending_payment_notifications = 0;
+
+if ($result) {
+
+    $row = $result->fetch_assoc();
+
+    $pending_payment_notifications =
+        (int) $row["total"];
+
+}
 
 /*
 |--------------------------------------------------------------------------
@@ -385,6 +407,39 @@ $owners_result = $conn->query($sql);
 
         }
 
+        /* NOTIFICATION BADGE */
+
+.notification-badge {
+
+    display: inline-flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    min-width: 22px;
+
+    height: 22px;
+
+    padding: 0 7px;
+
+    margin-left: 8px;
+
+    background: #dc2626;
+
+    color: white;
+
+    border-radius: 999px;
+
+    font-size: 12px;
+
+    font-weight: bold;
+
+    vertical-align: middle;
+
+    line-height: 1;
+
+}
 
         /* MANAGEMENT */
 
@@ -900,29 +955,49 @@ $owners_result = $conn->query($sql);
 
         <!-- PAYMENTS -->
 
-        <div class="management-card">
+        <!-- PAYMENTS -->
 
-            <h3>
-                Subscription Payments
-            </h3>
+<div class="management-card">
 
-            <p>
-                Monitor payments made by gym owners, including paid,
-                pending, and failed payments.
-            </p>
+    <h3>
 
-            <a
-                href="admin_subscription_payments.php"
-                class="button button-purple"
-            >
+        Subscription Payments
 
-                View Payments
+        <?php if (
+            $pending_payment_notifications > 0
+        ): ?>
 
-            </a>
+            <span class="notification-badge">
 
-        </div>
+                <?php
+                echo $pending_payment_notifications;
+                ?>
+
+            </span>
+
+        <?php endif; ?>
+
+    </h3>
 
 
+    <p>
+
+        Monitor payments made by gym owners, including paid,
+        pending, and failed payments.
+
+    </p>
+
+
+    <a
+        href="admin_subscription_payments.php"
+        class="button button-purple"
+    >
+
+        View Payments
+
+    </a>
+
+</div>
 
         <!-- CREATE SUBSCRIPTION -->
 
