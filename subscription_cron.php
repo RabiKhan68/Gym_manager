@@ -19,14 +19,16 @@
 |
 | IMPORTANT:
 |
-| This file does NOT calculate subscription dates.
+| This file DOES NOT:
 |
-| start_date and end_date are created by:
+| - calculate subscription dates
+| - create subscriptions
+| - create payments
+| - verify payments
+| - modify subscription prices
 |
-| - subscription_change.php
-| - subscription_renew.php
-|
-| The cron only changes subscription status.
+| Subscription dates are created when the subscription is successfully
+| created after payment verification.
 |
 |--------------------------------------------------------------------------
 */
@@ -51,8 +53,7 @@ header(
 |--------------------------------------------------------------------------
 */
 
-$today =
-    date("Y-m-d");
+$today = date("Y-m-d");
 
 $processed = 0;
 $expired = 0;
@@ -100,19 +101,18 @@ if (
 |--------------------------------------------------------------------------
 | STEP 1
 |--------------------------------------------------------------------------
-| Expire subscriptions whose end date has passed.
+| EXPIRE OLD ACTIVE SUBSCRIPTIONS
 |--------------------------------------------------------------------------
+|
+| An active subscription remains active through its end_date.
 |
 | Example:
 |
-| start_date = 23 Aug 2026
-| end_date   = 22 Sep 2026
+| start_date = 24 Aug
+| end_date   = 23 Sep
 |
-| On:
-|
-| 22 Sep -> remains active
-|
-| 23 Sep -> becomes expired
+| 23 Sep -> active
+| 24 Sep -> expired
 |
 |--------------------------------------------------------------------------
 */
@@ -130,8 +130,7 @@ try {
     ";
 
 
-    $stmt =
-        $conn->prepare($sql);
+    $stmt = $conn->prepare($sql);
 
 
     if (!$stmt) {
@@ -164,7 +163,6 @@ try {
 
     $stmt->close();
 
-
 }
 catch (Exception $e) {
 
@@ -188,28 +186,17 @@ catch (Exception $e) {
 |--------------------------------------------------------------------------
 | STEP 2
 |--------------------------------------------------------------------------
-| Find scheduled subscriptions whose start date has arrived.
+| FIND SCHEDULED SUBSCRIPTIONS
 |--------------------------------------------------------------------------
+|
+| Only subscriptions whose start_date has arrived are considered.
 |
 | Example:
 |
-| start_date = 23 Sep 2026
+| start_date = 24 Sep
 |
-| On 23 Sep:
-|
-| scheduled -> active
-|
-|--------------------------------------------------------------------------
-|
-| IMPORTANT:
-|
-| We do NOT calculate or modify:
-|
-| start_date
-| end_date
-|
-| The dates were already calculated correctly when the subscription
-| was created.
+| 23 Sep -> scheduled
+| 24 Sep -> eligible for activation
 |
 |--------------------------------------------------------------------------
 */
@@ -239,13 +226,13 @@ try {
 
         AND s.start_date <= ?
 
-        ORDER BY s.start_date ASC,
-                 s.subscription_id ASC
+        ORDER BY
+            s.start_date ASC,
+            s.subscription_id ASC
     ";
 
 
-    $stmt =
-        $conn->prepare($sql);
+    $stmt = $conn->prepare($sql);
 
 
     if (!$stmt) {
@@ -315,7 +302,7 @@ catch (Exception $e) {
 |--------------------------------------------------------------------------
 | STEP 3
 |--------------------------------------------------------------------------
-| Process each scheduled subscription.
+| PROCESS EACH SCHEDULED SUBSCRIPTION
 |--------------------------------------------------------------------------
 */
 
@@ -329,17 +316,14 @@ foreach (
 
     $subscription_id =
         (int)
-        $scheduled["subscription_id"];
-
-
-    $owner_id =
-        (int)
-        $scheduled["owner_id"];
+        $scheduled[
+            "subscription_id"
+        ];
 
 
     /*
     |--------------------------------------------------------------------------
-    | Start transaction for this subscription.
+    | Start transaction
     |--------------------------------------------------------------------------
     */
 
@@ -352,13 +336,12 @@ foreach (
         |--------------------------------------------------------------------------
         | STEP 3A
         |--------------------------------------------------------------------------
-        | Lock the scheduled subscription.
+        | LOCK THE SCHEDULED SUBSCRIPTION
         |--------------------------------------------------------------------------
         |
-        | This prevents two cron requests from activating the same
-        | subscription at the same time.
+        | This prevents two simultaneous cron requests from activating
+        | the same subscription.
         |
-        |--------------------------------------------------------------------------
         */
 
         $sql = "
@@ -427,7 +410,7 @@ foreach (
 
         /*
         |--------------------------------------------------------------------------
-        | Already processed
+        | Subscription was already processed
         |--------------------------------------------------------------------------
         */
 
@@ -444,22 +427,29 @@ foreach (
 
         /*
         |--------------------------------------------------------------------------
-        | STEP 3B
-        |--------------------------------------------------------------------------
-        | Verify that the scheduled subscription belongs to the same owner.
+        | Get owner ID from locked database record
         |--------------------------------------------------------------------------
         */
 
         $owner_id =
             (int)
-            $locked_scheduled["owner_id"];
+            $locked_scheduled[
+                "owner_id"
+            ];
+
+
+        $plan_id =
+            (int)
+            $locked_scheduled[
+                "subscription_plan_id"
+            ];
 
 
         /*
         |--------------------------------------------------------------------------
-        | STEP 3C
+        | STEP 3B
         |--------------------------------------------------------------------------
-        | Lock the owner's active subscription.
+        | LOCK ANY CURRENT ACTIVE SUBSCRIPTION
         |--------------------------------------------------------------------------
         */
 
@@ -478,8 +468,9 @@ foreach (
 
             AND status = 'active'
 
-            ORDER BY end_date DESC,
-                     subscription_id DESC
+            ORDER BY
+                end_date DESC,
+                subscription_id DESC
 
             LIMIT 1
 
@@ -528,32 +519,23 @@ foreach (
 
         /*
         |--------------------------------------------------------------------------
-        | STEP 3D
+        | STEP 3C
         |--------------------------------------------------------------------------
-        | Safety check.
+        | SAFETY CHECK
         |--------------------------------------------------------------------------
         |
-        | Normally there should be no active subscription when the
-        | scheduled plan starts.
+        | If the owner still has a valid active subscription,
+        | do NOT activate the scheduled one early.
         |
-        | Example:
-        |
-        | Current:
-        | 23 Aug -> 22 Sep
-        |
-        | Scheduled:
-        | 23 Sep -> 22 Oct
-        |
-        | On 23 Sep the old subscription should already be expired.
-        |
-        |--------------------------------------------------------------------------
         */
 
         if ($active_subscription) {
 
             $active_end_date =
                 new DateTime(
-                    $active_subscription["end_date"]
+                    $active_subscription[
+                        "end_date"
+                    ]
                 );
 
 
@@ -563,11 +545,8 @@ foreach (
 
             /*
             |--------------------------------------------------------------------------
-            | Active subscription is still valid.
+            | Current subscription is still valid.
             |--------------------------------------------------------------------------
-            |
-            | DO NOT activate the scheduled plan early.
-            |
             */
 
             if (
@@ -586,11 +565,11 @@ foreach (
 
             /*
             |--------------------------------------------------------------------------
-            | Active subscription has expired.
+            | Current subscription has expired.
             |--------------------------------------------------------------------------
             |
-            | Mark it as expired before activating the new subscription.
-            |--------------------------------------------------------------------------
+            | Mark it expired inside this transaction.
+            |
             */
 
             $active_id =
@@ -646,18 +625,14 @@ foreach (
 
         /*
         |--------------------------------------------------------------------------
-        | STEP 3E
+        | STEP 3D
         |--------------------------------------------------------------------------
-        | Verify the subscription plan still exists.
+        | VERIFY SUBSCRIPTION PLAN
         |--------------------------------------------------------------------------
+        |
+        | The plan must still exist.
+        |
         */
-
-        $plan_id =
-            (int)
-            $locked_scheduled[
-                "subscription_plan_id"
-            ];
-
 
         $sql = "
             SELECT
@@ -717,7 +692,7 @@ foreach (
 
         /*
         |--------------------------------------------------------------------------
-        | Plan no longer exists.
+        | Plan does not exist
         |--------------------------------------------------------------------------
         */
 
@@ -732,18 +707,19 @@ foreach (
 
         /*
         |--------------------------------------------------------------------------
-        | STEP 3F
+        | STEP 3E
         |--------------------------------------------------------------------------
-        | Re-check current member count.
+        | RE-CHECK MEMBER COUNT
         |--------------------------------------------------------------------------
         |
-        | This is important because the gym could have added members
-        | after scheduling the subscription.
-        |--------------------------------------------------------------------------
+        | The owner may have added members after purchasing/scheduling
+        | the subscription.
+        |
         */
 
         $sql = "
-            SELECT COUNT(*) AS total
+            SELECT
+                COUNT(*) AS total
 
             FROM members m
 
@@ -800,9 +776,9 @@ foreach (
 
         /*
         |--------------------------------------------------------------------------
-        | STEP 3G
+        | STEP 3F
         |--------------------------------------------------------------------------
-        | Validate member limit.
+        | MEMBER LIMIT VALIDATION
         |--------------------------------------------------------------------------
         */
 
@@ -812,7 +788,9 @@ foreach (
 
             $member_limit =
                 (int)
-                $plan["member_limit"];
+                $plan[
+                    "member_limit"
+                ];
 
 
             if (
@@ -822,24 +800,27 @@ foreach (
 
                 /*
                 |--------------------------------------------------------------------------
-                | Do not activate a plan that cannot support the current
-                | number of members.
+                | IMPORTANT
                 |--------------------------------------------------------------------------
                 |
-                | The scheduled subscription remains scheduled.
+                | Do not activate the scheduled subscription.
                 |
-                | The owner can reduce members or choose a higher plan.
+                | Throwing an exception causes the transaction to rollback.
                 |
-                |--------------------------------------------------------------------------
+                | Therefore:
+                |
+                | old subscription stays unchanged
+                | scheduled subscription stays scheduled
+                |
                 */
 
                 throw new Exception(
                     "The scheduled " .
                     $plan["plan_name"] .
                     " plan supports only " .
-                    $member_limit .
+                    number_format($member_limit) .
                     " members, but this gym currently has " .
-                    $total_members .
+                    number_format($total_members) .
                     " members."
                 );
 
@@ -850,20 +831,67 @@ foreach (
 
         /*
         |--------------------------------------------------------------------------
+        | STEP 3G
+        |--------------------------------------------------------------------------
+        | FINAL DATE SAFETY CHECK
+        |--------------------------------------------------------------------------
+        |
+        | The cron should never activate a malformed subscription.
+        |
+        */
+
+        $start_date =
+            $locked_scheduled[
+                "start_date"
+            ];
+
+
+        $end_date =
+            $locked_scheduled[
+                "end_date"
+            ];
+
+
+        if (
+            empty($start_date) ||
+            empty($end_date)
+        ) {
+
+            throw new Exception(
+                "Scheduled subscription has invalid dates."
+            );
+
+        }
+
+
+        if (
+            $end_date <
+            $start_date
+        ) {
+
+            throw new Exception(
+                "Scheduled subscription has an invalid date range."
+            );
+
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
         | STEP 3H
         |--------------------------------------------------------------------------
-        | Final activation.
+        | ACTIVATE SUBSCRIPTION
         |--------------------------------------------------------------------------
         |
         | IMPORTANT:
         |
-        | We do NOT change:
+        | We only change status.
+        |
+        | We DO NOT change:
         |
         | start_date
         | end_date
         |
-        | The subscription already contains the correct dates.
-        |--------------------------------------------------------------------------
         */
 
         $sql = "
@@ -910,7 +938,7 @@ foreach (
 
         /*
         |--------------------------------------------------------------------------
-        | Confirm activation.
+        | Confirm activation
         |--------------------------------------------------------------------------
         */
 
@@ -944,7 +972,7 @@ foreach (
 
         /*
         |--------------------------------------------------------------------------
-        | Rollback this subscription's transaction.
+        | ROLLBACK
         |--------------------------------------------------------------------------
         */
 
@@ -968,25 +996,7 @@ foreach (
 |--------------------------------------------------------------------------
 */
 
-if (
-    count($errors) > 0
-) {
-
-    /*
-    | Some subscriptions failed, but the cron itself completed.
-    |
-    | We use 200 because UptimeRobot successfully reached the endpoint.
-    | The response shows the individual errors.
-    */
-
-    http_response_code(200);
-
-}
-else {
-
-    http_response_code(200);
-
-}
+http_response_code(200);
 
 
 cronLog(

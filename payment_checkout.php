@@ -72,17 +72,17 @@ function formatPrice($price)
 | CALCULATE MONTHLY END DATE
 |--------------------------------------------------------------------------
 |
-| Example:
+| Examples:
 |
-| Start: 23 Aug
-| End:   22 Sep
+| 23 Aug -> 22 Sep
+| 24 Aug -> 23 Sep
+| 15 Aug -> 14 Sep
 |
-| Start: 31 Jan
-| End:   27/28 Feb
+| For dates where the next month does not contain the same
+| calendar day, the last valid day of the target month is used
+| and then one day is subtracted.
 |
-| This gives the owner a full one-month billing period
-| based on the actual start date.
-|
+|--------------------------------------------------------------------------
 */
 
 function calculateMonthlyEndDate($start_date)
@@ -92,18 +92,25 @@ function calculateMonthlyEndDate($start_date)
         $start =
             new DateTime($start_date);
 
+
+        $original_day =
+            (int)
+            $start->format("d");
+
+
         $next_month =
             new DateTime(
                 $start->format("Y-m-01")
             );
 
+
         $next_month->modify("+1 month");
 
-        $original_day =
-            (int) $start->format("d");
 
         $days_in_target_month =
-            (int) $next_month->format("t");
+            (int)
+            $next_month->format("t");
+
 
         $target_day =
             min(
@@ -111,19 +118,28 @@ function calculateMonthlyEndDate($start_date)
                 $days_in_target_month
             );
 
+
         $target_date =
             new DateTime(
                 sprintf(
                     "%04d-%02d-%02d",
-                    (int) $next_month->format("Y"),
-                    (int) $next_month->format("m"),
+                    (int)
+                    $next_month->format("Y"),
+
+                    (int)
+                    $next_month->format("m"),
+
                     $target_day
                 )
             );
 
+
         $target_date->modify("-1 day");
 
-        return $target_date->format("Y-m-d");
+
+        return $target_date->format(
+            "Y-m-d"
+        );
 
     }
     catch (Exception $e) {
@@ -162,19 +178,28 @@ if ($plan_id <= 0) {
 | LOAD SELECTED PLAN
 |--------------------------------------------------------------------------
 |
-| Never trust price/member_limit from the URL.
-| Always load the plan from the database.
+| NEVER trust price/member_limit from the browser.
 |
+| The database is always the source of truth.
+|
+|--------------------------------------------------------------------------
 */
+
+$selected_plan = null;
+
 
 $sql = "
     SELECT
+
         subscription_plan_id,
         plan_name,
         price,
         member_limit
+
     FROM subscription_plans
+
     WHERE subscription_plan_id = ?
+
     LIMIT 1
 ";
 
@@ -199,7 +224,15 @@ $stmt->bind_param(
 );
 
 
-$stmt->execute();
+if (!$stmt->execute()) {
+
+    $stmt->close();
+
+    die(
+        "Unable to load the selected subscription plan."
+    );
+
+}
 
 
 $result =
@@ -258,8 +291,9 @@ $sql = "
 
     AND s.end_date >= ?
 
-    ORDER BY s.end_date DESC,
-             s.subscription_id DESC
+    ORDER BY
+        s.end_date DESC,
+        s.subscription_id DESC
 
     LIMIT 1
 ";
@@ -287,7 +321,15 @@ $stmt->bind_param(
 );
 
 
-$stmt->execute();
+if (!$stmt->execute()) {
+
+    $stmt->close();
+
+    die(
+        "Unable to load current subscription."
+    );
+
+}
 
 
 $result =
@@ -304,6 +346,10 @@ $stmt->close();
 /*
 |--------------------------------------------------------------------------
 | GET UPCOMING SCHEDULED SUBSCRIPTION
+|--------------------------------------------------------------------------
+|
+| Only a future scheduled subscription counts here.
+|
 |--------------------------------------------------------------------------
 */
 
@@ -335,8 +381,9 @@ $sql = "
 
     AND s.start_date > ?
 
-    ORDER BY s.start_date ASC,
-             s.subscription_id ASC
+    ORDER BY
+        s.start_date ASC,
+        s.subscription_id ASC
 
     LIMIT 1
 ";
@@ -363,7 +410,15 @@ $stmt->bind_param(
 );
 
 
-$stmt->execute();
+if (!$stmt->execute()) {
+
+    $stmt->close();
+
+    die(
+        "Unable to check scheduled subscription."
+    );
+
+}
 
 
 $result =
@@ -382,17 +437,17 @@ $stmt->close();
 | DETERMINE PAYMENT TYPE
 |--------------------------------------------------------------------------
 |
-| We don't need another database column because we can determine
-| the purpose from the current subscription:
+| NEW
+| ---
+| No active subscription and no scheduled subscription.
 |
-| No current subscription + no scheduled subscription
-|     = NEW
+| CHANGE
+| ------
+| Active subscription exists and selected plan is different.
 |
-| Current subscription + different plan
-|     = CHANGE
-|
-| Current subscription + same plan
-|     = RENEW
+| RENEW
+| -----
+| Active subscription exists and selected plan is the same.
 |
 |--------------------------------------------------------------------------
 */
@@ -425,24 +480,56 @@ if ($current_subscription) {
 
 /*
 |--------------------------------------------------------------------------
-| BLOCK INVALID PAYMENT SITUATIONS
+| ERROR / SUCCESS
 |--------------------------------------------------------------------------
 */
 
 $error = "";
 
+$success = "";
+
 
 /*
-| If a future plan is already scheduled, don't create another
-| payment/change request.
+|--------------------------------------------------------------------------
+| SESSION PAYMENT ERROR
+|--------------------------------------------------------------------------
 */
 
-if ($upcoming_subscription) {
+if (
+    isset(
+        $_SESSION["payment_error"]
+    )
+) {
 
     $error =
-        "You already have a subscription scheduled. " .
-        "Please wait until the existing scheduled subscription " .
-        "is activated before creating another subscription payment.";
+        $_SESSION["payment_error"];
+
+
+    unset(
+        $_SESSION["payment_error"]
+    );
+
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| PREVENT ANOTHER SCHEDULED SUBSCRIPTION
+|--------------------------------------------------------------------------
+*/
+
+if (
+    $upcoming_subscription
+) {
+
+    $error =
+        "You already have a subscription scheduled " .
+        "to start on " .
+        formatDate(
+            $upcoming_subscription["start_date"]
+        ) .
+        ". Please wait until the existing scheduled " .
+        "subscription is activated before creating another one.";
 
 }
 
@@ -457,7 +544,8 @@ $total_members = 0;
 
 
 $sql = "
-    SELECT COUNT(*) AS total
+    SELECT
+        COUNT(*) AS total
 
     FROM members m
 
@@ -488,7 +576,15 @@ $stmt->bind_param(
 );
 
 
-$stmt->execute();
+if (!$stmt->execute()) {
+
+    $stmt->close();
+
+    die(
+        "Unable to calculate member count."
+    );
+
+}
 
 
 $result =
@@ -509,7 +605,7 @@ $stmt->close();
 
 /*
 |--------------------------------------------------------------------------
-| MEMBER LIMIT CHECK
+| MEMBER LIMIT VALIDATION
 |--------------------------------------------------------------------------
 */
 
@@ -530,11 +626,15 @@ if (
 
         $error =
             "Your gym currently has " .
-            number_format($total_members) .
+            number_format(
+                $total_members
+            ) .
             " members, but the " .
             $selected_plan["plan_name"] .
             " plan supports only " .
-            number_format($member_limit) .
+            number_format(
+                $member_limit
+            ) .
             " members.";
 
     }
@@ -544,14 +644,21 @@ if (
 
 /*
 |--------------------------------------------------------------------------
-| DETERMINE SUBSCRIPTION ID
+| DETERMINE ASSOCIATED CURRENT SUBSCRIPTION ID
 |--------------------------------------------------------------------------
 |
-| For a renewal/change, we associate the payment with the
-| current subscription.
+| For:
 |
-| For a first subscription, this remains NULL.
+| NEW
+|     NULL
 |
+| CHANGE
+|     Current subscription ID
+|
+| RENEW
+|     Current subscription ID
+|
+|--------------------------------------------------------------------------
 */
 
 $subscription_id = null;
@@ -572,13 +679,23 @@ if ($current_subscription) {
 |--------------------------------------------------------------------------
 | DETERMINE PROPOSED SUBSCRIPTION DATES
 |--------------------------------------------------------------------------
+|
+| These are DISPLAY / PAYMENT metadata only.
+|
+| The actual subscription record must be created only after
+| successful payment verification.
+|
+|--------------------------------------------------------------------------
 */
 
 $proposed_start_date = null;
+
 $proposed_end_date = null;
 
 
-if ($payment_type === "new") {
+if (
+    $payment_type === "new"
+) {
 
     /*
     | First subscription starts today.
@@ -588,11 +705,9 @@ if ($payment_type === "new") {
         $today;
 
 }
-elseif ($payment_type === "renew") {
-
-    /*
-    | Renewal starts the day after current subscription expires.
-    */
+elseif (
+    $payment_type === "renew"
+) {
 
     try {
 
@@ -603,7 +718,11 @@ elseif ($payment_type === "renew") {
                 ]
             );
 
-        $renew_start->modify("+1 day");
+
+        $renew_start->modify(
+            "+1 day"
+        );
+
 
         $proposed_start_date =
             $renew_start->format(
@@ -619,11 +738,9 @@ elseif ($payment_type === "renew") {
     }
 
 }
-elseif ($payment_type === "change") {
-
-    /*
-    | Plan change starts after current subscription ends.
-    */
+elseif (
+    $payment_type === "change"
+) {
 
     try {
 
@@ -634,7 +751,11 @@ elseif ($payment_type === "change") {
                 ]
             );
 
-        $change_start->modify("+1 day");
+
+        $change_start->modify(
+            "+1 day"
+        );
+
 
         $proposed_start_date =
             $change_start->format(
@@ -661,40 +782,20 @@ if (
             $proposed_start_date
         );
 
-}
 
+    if (!$proposed_end_date) {
 
-/*
-|--------------------------------------------------------------------------
-| SAME PLAN / RENEWAL VALIDATION
-|--------------------------------------------------------------------------
-*/
+        $error =
+            "Unable to calculate the subscription end date.";
 
-if (
-    $error === "" &&
-    $payment_type === "renew"
-) {
-
-    /*
-    | Renewal is valid.
-    |
-    | We intentionally allow renewal of the same plan.
-    */
+    }
 
 }
 
 
 /*
 |--------------------------------------------------------------------------
-| CREATE PAYMENT
-|--------------------------------------------------------------------------
-|
-| IMPORTANT:
-|
-| This page creates ONLY a pending payment.
-|
-| It does NOT activate the subscription.
-|
+| PAYMENT VARIABLES
 |--------------------------------------------------------------------------
 */
 
@@ -705,38 +806,70 @@ $transaction_reference = null;
 
 /*
 |--------------------------------------------------------------------------
-| HANDLE "CREATE PAYMENT"
+| HANDLE CREATE PAYMENT
 |--------------------------------------------------------------------------
 */
 
 if (
     $_SERVER["REQUEST_METHOD"] === "POST" &&
-    isset($_POST["create_payment"])
+    isset(
+        $_POST["create_payment"]
+    )
 ) {
 
-    if ($error !== "") {
+    /*
+    |--------------------------------------------------------------------------
+    | POST PLAN ID MUST MATCH URL PLAN ID
+    |--------------------------------------------------------------------------
+    */
 
-        // Existing validation error.
+    $posted_plan_id =
+        isset($_POST["plan_id"])
+        ? (int)
+        $_POST["plan_id"]
+        : 0;
+
+
+    if (
+        $posted_plan_id !==
+        $plan_id
+    ) {
+
+        $error =
+            "Invalid subscription plan request.";
 
     }
-    else {
 
-        /*
-        |----------------------------------------------------------------------
-        | Re-check plan from database
-        |----------------------------------------------------------------------
-        */
+
+    /*
+    |--------------------------------------------------------------------------
+    | RELOAD PLAN
+    |--------------------------------------------------------------------------
+    |
+    | Never rely on the plan information loaded before the POST.
+    |
+    |--------------------------------------------------------------------------
+    */
+
+    if (
+        $error === ""
+    ) {
 
         $sql = "
             SELECT
+
                 subscription_plan_id,
                 plan_name,
                 price,
                 member_limit
+
             FROM subscription_plans
+
             WHERE subscription_plan_id = ?
+
             LIMIT 1
         ";
+
 
         $stmt =
             $conn->prepare($sql);
@@ -755,273 +888,167 @@ if (
                 $plan_id
             );
 
-            $stmt->execute();
 
-            $result =
-                $stmt->get_result();
+            if (!$stmt->execute()) {
 
-            $locked_plan =
-                $result->fetch_assoc();
-
-            $stmt->close();
-
-
-            if (!$locked_plan) {
+                $stmt->close();
 
                 $error =
-                    "The selected plan no longer exists.";
+                    "Unable to verify the selected plan.";
 
             }
             else {
 
-                /*
-                |--------------------------------------------------------------
-                | Re-check member limit
-                |--------------------------------------------------------------
-                */
-
-                if (
-                    $locked_plan[
-                        "member_limit"
-                    ] !== null
-                ) {
-
-                    $locked_limit =
-                        (int)
-                        $locked_plan[
-                            "member_limit"
-                        ];
+                $result =
+                    $stmt->get_result();
 
 
-                    if (
-                        $total_members >
-                        $locked_limit
-                    ) {
+                $locked_plan =
+                    $result->fetch_assoc();
 
-                        $error =
-                            "Your gym currently has " .
-                            number_format(
-                                $total_members
-                            ) .
-                            " members, but this plan " .
-                            "supports only " .
-                            number_format(
-                                $locked_limit
-                            ) .
-                            " members.";
 
-                    }
+                $stmt->close();
+
+
+                if (!$locked_plan) {
+
+                    $error =
+                        "The selected plan no longer exists.";
+
+                }
+                else {
+
+                    $selected_plan =
+                        $locked_plan;
 
                 }
 
+            }
+
+        }
+
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | RE-CHECK CURRENT SUBSCRIPTION
+    |--------------------------------------------------------------------------
+    */
+
+    if (
+        $error === ""
+    ) {
+
+        $sql = "
+            SELECT
+
+                s.subscription_id,
+                s.subscription_plan_id,
+                s.start_date,
+                s.end_date,
+                s.status,
+
+                sp.plan_name,
+                sp.price,
+                sp.member_limit
+
+            FROM gym_owner_subscriptions s
+
+            INNER JOIN subscription_plans sp
+                ON s.subscription_plan_id =
+                   sp.subscription_plan_id
+
+            WHERE s.owner_id = ?
+
+            AND s.status = 'active'
+
+            AND s.start_date <= ?
+
+            AND s.end_date >= ?
+
+            ORDER BY
+                s.end_date DESC,
+                s.subscription_id DESC
+
+            LIMIT 1
+        ";
+
+
+        $stmt =
+            $conn->prepare($sql);
+
+
+        if (!$stmt) {
+
+            $error =
+                "Unable to verify your current subscription.";
+
+        }
+        else {
+
+            $stmt->bind_param(
+                "iss",
+                $owner_id,
+                $today,
+                $today
+            );
+
+
+            if (!$stmt->execute()) {
+
+                $stmt->close();
+
+                $error =
+                    "Unable to verify your current subscription.";
+
+            }
+            else {
+
+                $result =
+                    $stmt->get_result();
+
+
+                $locked_current =
+                    $result->fetch_assoc();
+
+
+                $stmt->close();
+
+
+                $current_subscription =
+                    $locked_current;
+
 
                 /*
                 |--------------------------------------------------------------
-                | Create payment
+                | Recalculate payment type.
                 |--------------------------------------------------------------
                 */
 
-                if ($error === "") {
-
-                    /*
-                    | Generate our own unique reference.
-                    */
-
-                    $transaction_reference =
-                        "SUBPAY-" .
-                        date("YmdHis") .
-                        "-" .
-                        strtoupper(
-                            bin2hex(
-                                random_bytes(4)
-                            )
-                        );
+                $payment_type =
+                    "new";
 
 
-                    $amount =
-                        (float)
-                        $locked_plan["price"];
+                if ($current_subscription) {
 
+                    if (
+                        (int)
+                        $current_subscription[
+                            "subscription_plan_id"
+                        ]
+                        ===
+                        $plan_id
+                    ) {
 
-                    $conn->begin_transaction();
-
-
-                    try {
-
-                        /*
-                        |------------------------------------------------------
-                        | Prevent duplicate pending/submitted payments
-                        |------------------------------------------------------
-                        |
-                        | We don't want the owner clicking the button repeatedly
-                        | and creating many unpaid payment records.
-                        |
-                        */
-
-                        $sql = "
-                            SELECT
-                                payment_id,
-                                transaction_reference,
-                                payment_status
-                            FROM owner_subscription_payments
-                            WHERE owner_id = ?
-                            AND subscription_plan_id = ?
-                            AND payment_status IN (
-                                'pending',
-                                'submitted'
-                            )
-                            ORDER BY payment_id DESC
-                            LIMIT 1
-                            FOR UPDATE
-                        ";
-
-                        $stmt =
-                            $conn->prepare($sql);
-
-
-                        if (!$stmt) {
-
-                            throw new Exception(
-                                "Unable to check existing payment."
-                            );
-
-                        }
-
-
-                        $stmt->bind_param(
-                            "ii",
-                            $owner_id,
-                            $plan_id
-                        );
-
-
-                        $stmt->execute();
-
-
-                        $result =
-                            $stmt->get_result();
-
-
-                        $existing_payment =
-                            $result->fetch_assoc();
-
-
-                        $stmt->close();
-
-
-                        if ($existing_payment) {
-
-                            $conn->commit();
-
-
-                            $payment_id =
-                                (int)
-                                $existing_payment[
-                                    "payment_id"
-                                ];
-
-
-                            $transaction_reference =
-                                $existing_payment[
-                                    "transaction_reference"
-                                ];
-
-                        }
-                        else {
-
-                            /*
-                            |--------------------------------------------------
-                            | Insert pending payment
-                            |--------------------------------------------------
-                            */
-
-                            $sql = "
-                                INSERT INTO owner_subscription_payments
-                                (
-                                    owner_id,
-                                    subscription_plan_id,
-                                    subscription_id,
-                                    amount,
-                                    payment_method,
-                                    payment_status,
-                                    transaction_reference,
-                                    created_at
-                                )
-                                VALUES
-                                (
-                                    ?,
-                                    ?,
-                                    ?,
-                                    ?,
-                                    'jazzcash',
-                                    'pending',
-                                    ?,
-                                    NOW()
-                                )
-                            ";
-
-
-                            $stmt =
-                                $conn->prepare($sql);
-
-
-                            if (!$stmt) {
-
-                                throw new Exception(
-                                    "Unable to prepare payment."
-                                );
-
-                            }
-
-
-                            /*
-                            | mysqli accepts NULL correctly when the
-                            | bound variable is NULL.
-                            */
-
-                            $stmt->bind_param(
-                                "iiids",
-                                $owner_id,
-                                $plan_id,
-                                $subscription_id,
-                                $amount,
-                                $transaction_reference
-                            );
-
-
-                            if (!$stmt->execute()) {
-
-                                throw new Exception(
-                                    "Unable to create payment record."
-                                );
-
-                            }
-
-
-                            $payment_id =
-                                $stmt->insert_id;
-
-
-                            $stmt->close();
-
-
-                            $conn->commit();
-
-                        }
+                        $payment_type =
+                            "renew";
 
                     }
-                    catch (Exception $e) {
+                    else {
 
-                        $conn->rollback();
-
-                        $error =
-                            $e->getMessage();
-
-                        $payment_id =
-                            null;
-
-                        $transaction_reference =
-                            null;
+                        $payment_type =
+                            "change";
 
                     }
 
@@ -1033,21 +1060,752 @@ if (
 
     }
 
+
+    /*
+    |--------------------------------------------------------------------------
+    | RE-CHECK SCHEDULED SUBSCRIPTION
+    |--------------------------------------------------------------------------
+    */
+
+    if (
+        $error === ""
+    ) {
+
+        $sql = "
+            SELECT
+
+                s.subscription_id,
+                s.subscription_plan_id,
+                s.start_date,
+                s.end_date,
+                s.status
+
+            FROM gym_owner_subscriptions s
+
+            WHERE s.owner_id = ?
+
+            AND s.status = 'scheduled'
+
+            AND s.start_date > ?
+
+            ORDER BY
+                s.start_date ASC,
+                s.subscription_id ASC
+
+            LIMIT 1
+
+            FOR UPDATE
+        ";
+
+
+        /*
+        | This SELECT is outside the transaction.
+        | We use it only as a fresh validation.
+        */
+
+        $stmt =
+            $conn->prepare($sql);
+
+
+        if (!$stmt) {
+
+            $error =
+                "Unable to verify scheduled subscriptions.";
+
+        }
+        else {
+
+            $stmt->bind_param(
+                "is",
+                $owner_id,
+                $today
+            );
+
+
+            if (!$stmt->execute()) {
+
+                $stmt->close();
+
+                $error =
+                    "Unable to verify scheduled subscriptions.";
+
+            }
+            else {
+
+                $result =
+                    $stmt->get_result();
+
+
+                $fresh_scheduled =
+                    $result->fetch_assoc();
+
+
+                $stmt->close();
+
+
+                if ($fresh_scheduled) {
+
+                    $error =
+                        "You already have a subscription scheduled " .
+                        "to start on " .
+                        formatDate(
+                            $fresh_scheduled[
+                                "start_date"
+                            ]
+                        ) .
+                        ".";
+
+                }
+
+            }
+
+        }
+
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | RE-CHECK MEMBER LIMIT
+    |--------------------------------------------------------------------------
+    */
+
+    if (
+        $error === "" &&
+        $selected_plan["member_limit"] !== null
+    ) {
+
+        $member_limit =
+            (int)
+            $selected_plan[
+                "member_limit"
+            ];
+
+
+        if (
+            $total_members >
+            $member_limit
+        ) {
+
+            $error =
+                "Your gym currently has " .
+                number_format(
+                    $total_members
+                ) .
+                " members, but the " .
+                $selected_plan[
+                    "plan_name"
+                ] .
+                " plan supports only " .
+                number_format(
+                    $member_limit
+                ) .
+                " members.";
+
+        }
+
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | RECALCULATE DATES
+    |--------------------------------------------------------------------------
+    */
+
+    if (
+        $error === ""
+    ) {
+
+        if (
+            $payment_type === "new"
+        ) {
+
+            $proposed_start_date =
+                $today;
+
+        }
+        elseif (
+            $payment_type === "renew" ||
+            $payment_type === "change"
+        ) {
+
+            if (!$current_subscription) {
+
+                $error =
+                    "Your current subscription could not be found.";
+
+            }
+            else {
+
+                try {
+
+                    $new_start =
+                        new DateTime(
+                            $current_subscription[
+                                "end_date"
+                            ]
+                        );
+
+
+                    $new_start->modify(
+                        "+1 day"
+                    );
+
+
+                    $proposed_start_date =
+                        $new_start->format(
+                            "Y-m-d"
+                        );
+
+                }
+                catch (Exception $e) {
+
+                    $error =
+                        "Unable to calculate the subscription start date.";
+
+                }
+
+            }
+
+        }
+
+
+        if (
+            $error === "" &&
+            $proposed_start_date
+        ) {
+
+            $proposed_end_date =
+                calculateMonthlyEndDate(
+                    $proposed_start_date
+                );
+
+
+            if (!$proposed_end_date) {
+
+                $error =
+                    "Unable to calculate the subscription end date.";
+
+            }
+
+        }
+
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | CREATE PAYMENT RECORD
+    |--------------------------------------------------------------------------
+    */
+
+    if (
+        $error === ""
+    ) {
+
+        $conn->begin_transaction();
+
+
+        try {
+
+            /*
+            |------------------------------------------------------------------
+            | LOCK OWNER'S RELEVANT SUBSCRIPTION STATE
+            |------------------------------------------------------------------
+            */
+
+            $sql = "
+                SELECT
+
+                    subscription_id,
+                    subscription_plan_id,
+                    start_date,
+                    end_date,
+                    status
+
+                FROM gym_owner_subscriptions
+
+                WHERE owner_id = ?
+
+                AND status IN (
+                    'active',
+                    'scheduled'
+                )
+
+                ORDER BY
+                    start_date ASC,
+                    subscription_id ASC
+
+                FOR UPDATE
+            ";
+
+
+            $stmt =
+                $conn->prepare($sql);
+
+
+            if (!$stmt) {
+
+                throw new Exception(
+                    "Unable to lock subscription state."
+                );
+
+            }
+
+
+            $stmt->bind_param(
+                "i",
+                $owner_id
+            );
+
+
+            if (!$stmt->execute()) {
+
+                $stmt->close();
+
+                throw new Exception(
+                    "Unable to verify subscription state."
+                );
+
+            }
+
+
+            $result =
+                $stmt->get_result();
+
+
+            $locked_active = null;
+
+            $locked_scheduled = null;
+
+
+            while (
+                $row =
+                $result->fetch_assoc()
+            ) {
+
+                if (
+                    $row["status"] ===
+                    "active"
+                ) {
+
+                    /*
+                    | Only consider an actually current
+                    | active subscription.
+                    */
+
+                    if (
+                        $row["start_date"] <=
+                        $today &&
+                        $row["end_date"] >=
+                        $today
+                    ) {
+
+                        if (
+                            $locked_active === null
+                        ) {
+
+                            $locked_active =
+                                $row;
+
+                        }
+
+                    }
+
+                }
+                elseif (
+                    $row["status"] ===
+                    "scheduled"
+                ) {
+
+                    if (
+                        $row["start_date"] >
+                        $today
+                    ) {
+
+                        if (
+                            $locked_scheduled === null
+                        ) {
+
+                            $locked_scheduled =
+                                $row;
+
+                        }
+
+                    }
+
+                }
+
+            }
+
+
+            $stmt->close();
+
+
+            /*
+            |------------------------------------------------------------------
+            | No duplicate future subscription.
+            |------------------------------------------------------------------
+            */
+
+            if (
+                $locked_scheduled
+            ) {
+
+                throw new Exception(
+                    "You already have a subscription scheduled to start on " .
+                    formatDate(
+                        $locked_scheduled[
+                            "start_date"
+                        ]
+                    ) .
+                    "."
+                );
+
+            }
+
+
+            /*
+            |------------------------------------------------------------------
+            | Recalculate payment type from locked data.
+            |------------------------------------------------------------------
+            */
+
+            $locked_payment_type =
+                "new";
+
+
+            $locked_subscription_id =
+                null;
+
+
+            if (
+                $locked_active
+            ) {
+
+                $locked_subscription_id =
+                    (int)
+                    $locked_active[
+                        "subscription_id"
+                    ];
+
+
+                if (
+                    (int)
+                    $locked_active[
+                        "subscription_plan_id"
+                    ]
+                    ===
+                    $plan_id
+                ) {
+
+                    $locked_payment_type =
+                        "renew";
+
+                }
+                else {
+
+                    $locked_payment_type =
+                        "change";
+
+                }
+
+            }
+
+
+            /*
+            |------------------------------------------------------------------
+            | Make sure the browser's intended operation still matches.
+            |------------------------------------------------------------------
+            */
+
+            if (
+                $locked_payment_type !==
+                $payment_type
+            ) {
+
+                throw new Exception(
+                    "Your subscription status changed. " .
+                    "Please reload the payment page and try again."
+                );
+
+            }
+
+
+            $subscription_id =
+                $locked_subscription_id;
+
+
+            /*
+            |------------------------------------------------------------------
+            | PREVENT DUPLICATE PAYMENT
+            |------------------------------------------------------------------
+            |
+            | Existing pending/submitted payment for the same owner/plan
+            | is reused instead of creating another one.
+            |
+            */
+
+            $sql = "
+                SELECT
+
+                    payment_id,
+                    transaction_reference,
+                    payment_status
+
+                FROM owner_subscription_payments
+
+                WHERE owner_id = ?
+
+                AND subscription_plan_id = ?
+
+                AND payment_status IN (
+                    'pending',
+                    'submitted'
+                )
+
+                ORDER BY
+                    payment_id DESC
+
+                LIMIT 1
+
+                FOR UPDATE
+            ";
+
+
+            $stmt =
+                $conn->prepare($sql);
+
+
+            if (!$stmt) {
+
+                throw new Exception(
+                    "Unable to check existing payment."
+                );
+
+            }
+
+
+            $stmt->bind_param(
+                "ii",
+                $owner_id,
+                $plan_id
+            );
+
+
+            if (!$stmt->execute()) {
+
+                $stmt->close();
+
+                throw new Exception(
+                    "Unable to check existing payment."
+                );
+
+            }
+
+
+            $result =
+                $stmt->get_result();
+
+
+            $existing_payment =
+                $result->fetch_assoc();
+
+
+            $stmt->close();
+
+
+            /*
+            |------------------------------------------------------------------
+            | REUSE EXISTING PAYMENT
+            |------------------------------------------------------------------
+            */
+
+            if (
+                $existing_payment
+            ) {
+
+                $payment_id =
+                    (int)
+                    $existing_payment[
+                        "payment_id"
+                    ];
+
+
+                $transaction_reference =
+                    $existing_payment[
+                        "transaction_reference"
+                    ];
+
+
+                $conn->commit();
+
+            }
+            else {
+
+                /*
+                |--------------------------------------------------------------
+                | Generate unique internal reference.
+                |--------------------------------------------------------------
+                */
+
+                try {
+
+                    $random_part =
+                        strtoupper(
+                            bin2hex(
+                                random_bytes(6)
+                            )
+                        );
+
+                }
+                catch (Exception $e) {
+
+                    $random_part =
+                        strtoupper(
+                            uniqid()
+                        );
+
+                }
+
+
+                $transaction_reference =
+                    "SUBPAY-" .
+                    date("YmdHis") .
+                    "-" .
+                    $random_part;
+
+
+                /*
+                |--------------------------------------------------------------
+                | Payment amount comes ONLY from DB.
+                |--------------------------------------------------------------
+                */
+
+                $amount =
+                    (float)
+                    $selected_plan[
+                        "price"
+                    ];
+
+
+                /*
+                |--------------------------------------------------------------
+                | Insert payment.
+                |--------------------------------------------------------------
+                */
+
+                $sql = "
+                    INSERT INTO owner_subscription_payments
+                    (
+                        owner_id,
+                        subscription_plan_id,
+                        subscription_id,
+                        amount,
+                        payment_method,
+                        payment_status,
+                        transaction_reference,
+                        created_at
+                    )
+                    VALUES
+                    (
+                        ?,
+                        ?,
+                        ?,
+                        ?,
+                        'jazzcash',
+                        'pending',
+                        ?,
+                        NOW()
+                    )
+                ";
+
+
+                $stmt =
+                    $conn->prepare($sql);
+
+
+                if (!$stmt) {
+
+                    throw new Exception(
+                        "Unable to prepare payment record."
+                    );
+
+                }
+
+
+                /*
+                | subscription_id can be NULL.
+                |
+                | bind_param accepts NULL for the integer parameter.
+                */
+
+                $stmt->bind_param(
+                    "iiids",
+                    $owner_id,
+                    $plan_id,
+                    $subscription_id,
+                    $amount,
+                    $transaction_reference
+                );
+
+
+                if (!$stmt->execute()) {
+
+                    $stmt->close();
+
+                    throw new Exception(
+                        "Unable to create payment record."
+                    );
+
+                }
+
+
+                $payment_id =
+                    (int)
+                    $stmt->insert_id;
+
+
+                $stmt->close();
+
+
+                $conn->commit();
+
+            }
+
+        }
+        catch (Exception $e) {
+
+            $conn->rollback();
+
+
+            $payment_id =
+                null;
+
+
+            $transaction_reference =
+                null;
+
+
+            $error =
+                $e->getMessage();
+
+        }
+
+    }
+
 }
 
 
 /*
 |--------------------------------------------------------------------------
-| JAZZCASH QR CONFIGURATION
+| JAZZCASH / RAAST QR IMAGE
 |--------------------------------------------------------------------------
 |
-| IMPORTANT:
+| Put your merchant QR image here:
 |
-| Put your actual merchant QR image in:
-|
-|     images/jazzcash-raast-qr.png
-|
-| We will replace this with the actual merchant QR after you receive it.
+| images/jazzcash-raast-qr.png
 |
 |--------------------------------------------------------------------------
 */
@@ -1066,13 +1824,17 @@ $payment_type_label =
     "New Subscription";
 
 
-if ($payment_type === "change") {
+if (
+    $payment_type === "change"
+) {
 
     $payment_type_label =
         "Plan Change";
 
 }
-elseif ($payment_type === "renew") {
+elseif (
+    $payment_type === "renew"
+) {
 
     $payment_type_label =
         "Subscription Renewal";
@@ -1143,6 +1905,8 @@ elseif ($payment_type === "renew") {
 
             align-items: center;
 
+            gap: 20px;
+
             margin-bottom: 25px;
 
         }
@@ -1182,6 +1946,8 @@ elseif ($payment_type === "renew") {
 
             font-weight: bold;
 
+            white-space: nowrap;
+
         }
 
 
@@ -1198,6 +1964,13 @@ elseif ($payment_type === "renew") {
                 rgba(0,0,0,.06);
 
             margin-bottom: 25px;
+
+        }
+
+
+        .card h2 {
+
+            margin-top: 0;
 
         }
 
@@ -1220,7 +1993,8 @@ elseif ($payment_type === "renew") {
 
             background: #f8fafc;
 
-            border: 1px solid #e5e7eb;
+            border:
+                1px solid #e5e7eb;
 
             padding: 20px;
 
@@ -1301,7 +2075,8 @@ elseif ($payment_type === "renew") {
 
             border-radius: 12px;
 
-            border: 1px solid #d1d5db;
+            border:
+                1px solid #d1d5db;
 
             margin: 20px auto;
 
@@ -1320,7 +2095,8 @@ elseif ($payment_type === "renew") {
 
             background: white;
 
-            border: 2px dashed #9ca3af;
+            border:
+                2px dashed #9ca3af;
 
             border-radius: 12px;
 
@@ -1395,7 +2171,8 @@ elseif ($payment_type === "renew") {
 
             padding: 13px;
 
-            border: 1px solid #d1d5db;
+            border:
+                1px solid #d1d5db;
 
             border-radius: 8px;
 
@@ -1473,7 +2250,8 @@ elseif ($payment_type === "renew") {
 
             background: #fee2e2;
 
-            border: 1px solid #fecaca;
+            border:
+                1px solid #fecaca;
 
             color: #991b1b;
 
@@ -1484,7 +2262,8 @@ elseif ($payment_type === "renew") {
 
             background: #fffbeb;
 
-            border: 1px solid #fde68a;
+            border:
+                1px solid #fde68a;
 
             color: #92400e;
 
@@ -1495,7 +2274,8 @@ elseif ($payment_type === "renew") {
 
             background: #eff6ff;
 
-            border: 1px solid #bfdbfe;
+            border:
+                1px solid #bfdbfe;
 
             color: #1e40af;
 
@@ -1521,6 +2301,25 @@ elseif ($payment_type === "renew") {
         }
 
 
+        .reference {
+
+            display: inline-block;
+
+            padding: 10px 14px;
+
+            background: #f3f4f6;
+
+            border-radius: 8px;
+
+            font-family:
+                Consolas,
+                monospace;
+
+            word-break: break-all;
+
+        }
+
+
         @media (max-width: 700px) {
 
             .container {
@@ -1535,8 +2334,6 @@ elseif ($payment_type === "renew") {
                 flex-direction: column;
 
                 align-items: flex-start;
-
-                gap: 15px;
 
             }
 
@@ -1598,7 +2395,11 @@ elseif ($payment_type === "renew") {
 
 
 
-    <?php if ($error !== ""): ?>
+    <!-- ERROR -->
+
+    <?php if (
+        $error !== ""
+    ): ?>
 
 
         <div class="card">
@@ -1611,7 +2412,9 @@ elseif ($payment_type === "renew") {
 
                 <br><br>
 
-                <?php echo e($error); ?>
+                <?php
+                echo e($error);
+                ?>
 
             </div>
 
@@ -1630,7 +2433,9 @@ elseif ($payment_type === "renew") {
         </div>
 
 
-    <?php elseif ($payment_id === null): ?>
+    <?php elseif (
+        $payment_id === null
+    ): ?>
 
 
         <!-- PAYMENT REVIEW -->
@@ -1641,9 +2446,12 @@ elseif ($payment_type === "renew") {
                 Review Payment
             </h2>
 
+
             <p>
+
                 Please review the subscription information
                 before creating your payment request.
+
             </p>
 
 
@@ -1741,7 +2549,7 @@ elseif ($payment_type === "renew") {
                 <div class="notice notice-info">
 
                     <strong>
-                        Subscription period
+                        Proposed subscription period
                     </strong>
 
                     <br><br>
@@ -1760,7 +2568,9 @@ elseif ($payment_type === "renew") {
 
                     </strong>
 
+
                     <br>
+
 
                     End:
 
@@ -1867,6 +2677,8 @@ elseif ($payment_type === "renew") {
 
                     </strong>.
 
+                    <br><br>
+
                     The renewed subscription will begin
                     afterward.
 
@@ -1879,8 +2691,20 @@ elseif ($payment_type === "renew") {
 
             <form
                 method="POST"
-                action="payment_checkout.php?plan_id=<?php echo $plan_id; ?>"
+                action="
+                payment_checkout.php?plan_id=<?php
+                echo $plan_id;
+                ?>"
             >
+
+                <input
+                    type="hidden"
+                    name="plan_id"
+                    value="<?php
+                    echo $plan_id;
+                    ?>"
+                >
+
 
                 <div class="actions">
 
@@ -1888,7 +2712,10 @@ elseif ($payment_type === "renew") {
                         type="submit"
                         name="create_payment"
                         value="1"
-                        class="button button-primary"
+                        class="
+                        button
+                        button-primary
+                        "
                     >
                         Continue to Payment
                     </button>
@@ -1896,7 +2723,10 @@ elseif ($payment_type === "renew") {
 
                     <a
                         href="my_subscription.php"
-                        class="button button-gray"
+                        class="
+                        button
+                        button-gray
+                        "
                     >
                         Cancel
                     </a>
@@ -1931,6 +2761,7 @@ elseif ($payment_type === "renew") {
 
             <div class="payment-box">
 
+
                 <h2>
                     Pay with JazzCash / Raast
                 </h2>
@@ -1957,10 +2788,9 @@ elseif ($payment_type === "renew") {
 
 
                 <span class="pending">
-
                     PAYMENT PENDING
-
                 </span>
+
 
 
                 <?php if (
@@ -1969,7 +2799,9 @@ elseif ($payment_type === "renew") {
 
 
                     <img
-                        src="<?php echo e($qr_image); ?>"
+                        src="<?php
+                        echo e($qr_image);
+                        ?>"
                         alt="JazzCash Raast Merchant QR"
                         class="qr"
                     >
@@ -1980,18 +2812,22 @@ elseif ($payment_type === "renew") {
 
                     <div class="qr-placeholder">
 
-                        Your JazzCash / Raast merchant QR
-                        will appear here.
+                        <div>
 
-                        <br><br>
+                            Your JazzCash / Raast
+                            merchant QR will appear here.
 
-                        Place your QR image at:
+                            <br><br>
 
-                        <br><br>
+                            Place your QR image at:
 
-                        <strong>
-                            images/jazzcash-raast-qr.png
-                        </strong>
+                            <br><br>
+
+                            <strong>
+                                images/jazzcash-raast-qr.png
+                            </strong>
+
+                        </div>
 
                     </div>
 
@@ -2006,21 +2842,29 @@ elseif ($payment_type === "renew") {
                         Payment Instructions
                     </strong>
 
+
                     <ol>
 
                         <li>
-                            Open JazzCash or another
+                            Open JazzCash or your
                             supported banking app.
                         </li>
 
-                        <li>
-                            Scan the merchant Raast QR code.
-                        </li>
 
                         <li>
+                            Scan the merchant
+                            Raast QR code.
+                        </li>
+
+
+                        <li>
+
                             Pay exactly
+
                             <strong>
+
                                 Rs.
+
                                 <?php
                                 echo formatPrice(
                                     $selected_plan[
@@ -2028,16 +2872,20 @@ elseif ($payment_type === "renew") {
                                     ]
                                 );
                                 ?>
+
                             </strong>.
+
                         </li>
+
 
                         <li>
                             Complete the payment.
                         </li>
 
+
                         <li>
-                            Keep your JazzCash/Raast
-                            transaction reference.
+                            Keep the transaction
+                            reference number.
                         </li>
 
                     </ol>
@@ -2046,23 +2894,33 @@ elseif ($payment_type === "renew") {
 
 
 
+                <!-- PAYMENT SUBMISSION -->
+
                 <div class="reference-box">
+
 
                     <form
                         method="POST"
                         action="payment_submit.php"
                     >
 
+
                         <input
                             type="hidden"
                             name="payment_id"
-                            value="<?php echo (int) $payment_id; ?>"
+                            value="<?php
+                            echo (int)
+                                $payment_id;
+                            ?>"
                         >
 
 
-                        <label for="gateway_transaction_id">
+                        <label
+                            for="gateway_transaction_id"
+                        >
 
-                            JazzCash / Raast Transaction Reference
+                            JazzCash / Raast
+                            Transaction Reference
 
                         </label>
 
@@ -2073,7 +2931,10 @@ elseif ($payment_type === "renew") {
                             name="gateway_transaction_id"
                             maxlength="150"
                             required
-                            placeholder="Enter the transaction/reference number"
+                            autocomplete="off"
+                            placeholder="
+                            Enter the transaction/reference number
+                            "
                         >
 
 
@@ -2081,7 +2942,10 @@ elseif ($payment_type === "renew") {
 
                             <button
                                 type="submit"
-                                class="button button-primary"
+                                class="
+                                button
+                                button-primary
+                                "
                             >
                                 I Have Completed Payment
                             </button>
@@ -2089,14 +2953,19 @@ elseif ($payment_type === "renew") {
 
                             <a
                                 href="my_subscription.php"
-                                class="button button-gray"
+                                class="
+                                button
+                                button-gray
+                                "
                             >
                                 Cancel
                             </a>
 
                         </div>
 
+
                     </form>
+
 
                 </div>
 
@@ -2104,23 +2973,39 @@ elseif ($payment_type === "renew") {
             </div>
 
 
+            <!-- INTERNAL REFERENCE -->
+
             <div class="notice notice-info">
 
                 <strong>
                     Payment Reference:
                 </strong>
 
-                <?php
-                echo e(
-                    $transaction_reference
-                );
-                ?>
+                <br><br>
+
+                <span class="reference">
+
+                    <?php
+                    echo e(
+                        $transaction_reference
+                    );
+                    ?>
+
+                </span>
+
 
                 <br><br>
 
                 Keep this reference for your records.
-                Your subscription will not be activated until
-                the payment has been verified.
+
+                Your subscription will
+
+                <strong>
+                    NOT
+                </strong>
+
+                be activated until the payment
+                has been verified.
 
             </div>
 

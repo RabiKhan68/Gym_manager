@@ -70,73 +70,54 @@ function formatDate($date)
 | 24 Sep -> 23 Oct
 | 31 Jan -> 28/29 Feb
 |
+| The subscription period is based on the actual start date.
+|
 */
 
 function calculateMonthlyEndDate($start_date)
 {
     try {
 
-        $start = new DateTime($start_date);
+        $start =
+            new DateTime($start_date);
 
-        /*
-        |--------------------------------------------------------------------------
-        | Calculate the next month's same calendar date.
-        |--------------------------------------------------------------------------
-        |
-        | Example:
-        |
-        | 23 Aug 2026
-        |     ↓ +1 month
-        | 23 Sep 2026
-        |
-        */
-
-        $next = clone $start;
-
-        /*
-        |--------------------------------------------------------------------------
-        | Handle month-end dates safely.
-        |--------------------------------------------------------------------------
-        |
-        | PHP can behave unexpectedly when adding one month to dates such as
-        | January 31.
-        |
-        | We therefore move to the first day of the current month, then move
-        | to the first day of the next month and construct the target date.
-        |
-        */
 
         $original_day =
-            (int) $start->format("d");
+            (int)
+            $start->format("d");
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Move to first day of next month
+        |--------------------------------------------------------------------------
+        */
 
         $next_month =
             new DateTime(
                 $start->format("Y-m-01")
             );
 
-        $next_month->modify("+1 month");
+
+        $next_month->modify(
+            "+1 month"
+        );
+
 
         /*
         |--------------------------------------------------------------------------
-        | Find the last valid day in the target month.
+        | Number of days in target month
         |--------------------------------------------------------------------------
         */
 
         $days_in_target_month =
-            (int) $next_month->format("t");
+            (int)
+            $next_month->format("t");
+
 
         /*
         |--------------------------------------------------------------------------
-        | Preserve the original day when possible.
-        |
-        | Example:
-        |
-        | 15 Aug → 15 Sep
-        |
-        | But:
-        |
-        | 31 Jan → 28/29 Feb
-        |
+        | Preserve starting day where possible
         |--------------------------------------------------------------------------
         */
 
@@ -146,9 +127,10 @@ function calculateMonthlyEndDate($start_date)
                 $days_in_target_month
             );
 
+
         /*
         |--------------------------------------------------------------------------
-        | Build the same-day date in the following month.
+        | Construct same calendar day in next month
         |--------------------------------------------------------------------------
         */
 
@@ -156,21 +138,31 @@ function calculateMonthlyEndDate($start_date)
             new DateTime(
                 sprintf(
                     "%04d-%02d-%02d",
-                    (int) $next_month->format("Y"),
-                    (int) $next_month->format("m"),
+                    (int)
+                    $next_month->format("Y"),
+
+                    (int)
+                    $next_month->format("m"),
+
                     $target_day
                 )
             );
 
+
         /*
         |--------------------------------------------------------------------------
-        | Subscription ends one day BEFORE the next month's start date.
+        | End one day before next month's same day
         |--------------------------------------------------------------------------
         */
 
-        $target_date->modify("-1 day");
+        $target_date->modify(
+            "-1 day"
+        );
 
-        return $target_date->format("Y-m-d");
+
+        return $target_date->format(
+            "Y-m-d"
+        );
 
     }
     catch (Exception $e) {
@@ -183,13 +175,11 @@ function calculateMonthlyEndDate($start_date)
 
 /*
 |--------------------------------------------------------------------------
-| ERROR / SUCCESS
+| ERROR
 |--------------------------------------------------------------------------
 */
 
 $error = "";
-
-$success = "";
 
 
 /*
@@ -197,11 +187,7 @@ $success = "";
 | GET CURRENT ACTIVE SUBSCRIPTION
 |--------------------------------------------------------------------------
 |
-| A subscription is current only when:
-|
-| status = active
-| start_date <= today
-| end_date >= today
+| Only a genuinely active subscription is renewable.
 |
 */
 
@@ -290,17 +276,17 @@ $stmt->close();
 
 /*
 |--------------------------------------------------------------------------
-| IF THERE IS NO ACTIVE SUBSCRIPTION
+| NO ACTIVE SUBSCRIPTION
 |--------------------------------------------------------------------------
 |
-| Renewal only works for an existing active subscription.
+| Renewal only applies to an existing active subscription.
 |
 */
 
 if (!$current_subscription) {
 
     header(
-        "Location: my_subscription.php"
+        "Location: subscription_plans.php"
     );
 
     exit();
@@ -313,8 +299,8 @@ if (!$current_subscription) {
 | GET UPCOMING SCHEDULED SUBSCRIPTION
 |--------------------------------------------------------------------------
 |
-| A future scheduled subscription prevents another
-| renewal from being created.
+| A future scheduled subscription means the owner already has
+| a pending plan change or renewal.
 |
 */
 
@@ -459,7 +445,8 @@ $row =
 
 
 $total_members =
-    (int) ($row["total"] ?? 0);
+    (int)
+    ($row["total"] ?? 0);
 
 
 $stmt->close();
@@ -469,8 +456,6 @@ $stmt->close();
 |--------------------------------------------------------------------------
 | CALCULATE RENEWAL DATES
 |--------------------------------------------------------------------------
-|
-| Renewal starts immediately after the current subscription.
 |
 | Example:
 |
@@ -493,6 +478,7 @@ try {
         new DateTime(
             $current_subscription["end_date"]
         );
+
 
     $renewal_start->modify(
         "+1 day"
@@ -524,10 +510,7 @@ catch (Exception $e) {
 | MEMBER LIMIT VALIDATION
 |--------------------------------------------------------------------------
 |
-| Renewal uses the SAME plan.
-|
-| If the owner has exceeded the plan's member limit,
-| do not allow renewal.
+| Renewal uses the same plan.
 |
 */
 
@@ -568,6 +551,13 @@ if (
 |--------------------------------------------------------------------------
 | HANDLE POST
 |--------------------------------------------------------------------------
+|
+| IMPORTANT:
+|
+| This file DOES NOT create a subscription.
+|
+| It sends the owner to payment_checkout.php.
+|
 */
 
 if (
@@ -576,17 +566,28 @@ if (
 
     /*
     |--------------------------------------------------------------------------
-    | Make sure submitted subscription ID matches
+    | Validate Submitted Subscription ID
     |--------------------------------------------------------------------------
     */
 
     $submitted_subscription_id =
         isset($_POST["subscription_id"])
-        ? (int) $_POST["subscription_id"]
+        ? (int)
+        $_POST["subscription_id"]
         : 0;
 
 
     if (
+        $submitted_subscription_id <= 0
+    ) {
+
+        $error =
+            "Invalid renewal request.";
+
+    }
+
+
+    elseif (
         $submitted_subscription_id !==
         (int)
         $current_subscription[
@@ -620,7 +621,7 @@ if (
 
     /*
     |--------------------------------------------------------------------------
-    | Member Limit
+    | MEMBER LIMIT
     |--------------------------------------------------------------------------
     */
 
@@ -634,7 +635,7 @@ if (
 
     /*
     |--------------------------------------------------------------------------
-    | Date Validation
+    | DATE VALIDATION
     |--------------------------------------------------------------------------
     */
 
@@ -651,569 +652,83 @@ if (
 
     /*
     |--------------------------------------------------------------------------
-    | CREATE RENEWAL
+    | SEND TO PAYMENT CHECKOUT
     |--------------------------------------------------------------------------
+    |
+    | DO NOT create gym_owner_subscriptions here.
+    |
+    | Payment must be completed first.
+    |
     */
 
     else {
 
-        $conn->begin_transaction();
-
-
-        try {
-
-            /*
-            |--------------------------------------------------------------------------
-            | LOCK CURRENT ACTIVE SUBSCRIPTION
-            |--------------------------------------------------------------------------
-            */
-
-            $sql = "
-                SELECT
-
-                    s.subscription_id,
-                    s.subscription_plan_id,
-                    s.start_date,
-                    s.end_date,
-                    s.status
-
-                FROM gym_owner_subscriptions s
-
-                WHERE s.owner_id = ?
-
-                AND s.status = 'active'
-
-                AND s.start_date <= ?
-
-                AND s.end_date >= ?
-
-                ORDER BY
-                    s.end_date DESC,
-                    s.subscription_id DESC
-
-                LIMIT 1
-
-                FOR UPDATE
-            ";
-
-
-            $stmt =
-                $conn->prepare($sql);
-
-
-            if (!$stmt) {
-
-                throw new Exception(
-                    "Unable to verify your current subscription."
-                );
-
-            }
-
-
-            $stmt->bind_param(
-                "iss",
-                $owner_id,
-                $today,
-                $today
-            );
-
-
-            if (!$stmt->execute()) {
-
-                $stmt->close();
-
-                throw new Exception(
-                    "Unable to verify your current subscription."
-                );
-
-            }
-
-
-            $result =
-                $stmt->get_result();
-
-
-            $locked_current =
-                $result->fetch_assoc();
-
-
-            $stmt->close();
-
-
-            /*
-            |--------------------------------------------------------------------------
-            | Current Subscription Must Still Exist
-            |--------------------------------------------------------------------------
-            */
-
-            if (!$locked_current) {
-
-                throw new Exception(
-                    "Your current subscription is no longer active."
-                );
-
-            }
-
-
-            /*
-            |--------------------------------------------------------------------------
-            | LOCK FUTURE SCHEDULE
-            |--------------------------------------------------------------------------
-            */
-
-            $sql = "
-                SELECT
-
-                    subscription_id,
-                    subscription_plan_id,
-                    start_date,
-                    end_date,
-                    status
-
-                FROM gym_owner_subscriptions
-
-                WHERE owner_id = ?
-
-                AND status = 'scheduled'
-
-                AND start_date > ?
-
-                ORDER BY
-                    start_date ASC,
-                    subscription_id ASC
-
-                LIMIT 1
-
-                FOR UPDATE
-            ";
-
-
-            $stmt =
-                $conn->prepare($sql);
-
-
-            if (!$stmt) {
-
-                throw new Exception(
-                    "Unable to verify scheduled subscription."
-                );
-
-            }
-
-
-            $stmt->bind_param(
-                "is",
-                $owner_id,
-                $today
-            );
-
-
-            if (!$stmt->execute()) {
-
-                $stmt->close();
-
-                throw new Exception(
-                    "Unable to verify scheduled subscription."
-                );
-
-            }
-
-
-            $result =
-                $stmt->get_result();
-
-
-            $locked_scheduled =
-                $result->fetch_assoc();
-
-
-            $stmt->close();
-
-
-            /*
-            |--------------------------------------------------------------------------
-            | PREVENT DUPLICATE RENEWAL
-            |--------------------------------------------------------------------------
-            */
-
-            if ($locked_scheduled) {
-
-                throw new Exception(
-                    "You already have a subscription scheduled for " .
-                    formatDate(
-                        $locked_scheduled["start_date"]
-                    ) .
-                    "."
-                );
-
-            }
-
-
-            /*
-            |--------------------------------------------------------------------------
-            | LOCK CURRENT PLAN
-            |--------------------------------------------------------------------------
-            |
-            | We use the plan attached to the active subscription.
-            | We do NOT trust a plan ID from the browser.
-            |
-            */
-
-            $locked_plan_id =
-                (int)
-                $locked_current[
-                    "subscription_plan_id"
-                ];
-
-
-            $sql = "
-                SELECT
-
-                    subscription_plan_id,
-                    plan_name,
-                    price,
-                    member_limit
-
-                FROM subscription_plans
-
-                WHERE subscription_plan_id = ?
-
-                LIMIT 1
-
-                FOR UPDATE
-            ";
-
-
-            $stmt =
-                $conn->prepare($sql);
-
-
-            if (!$stmt) {
-
-                throw new Exception(
-                    "Unable to verify your current subscription plan."
-                );
-
-            }
-
-
-            $stmt->bind_param(
-                "i",
-                $locked_plan_id
-            );
-
-
-            if (!$stmt->execute()) {
-
-                $stmt->close();
-
-                throw new Exception(
-                    "Unable to verify your current subscription plan."
-                );
-
-            }
-
-
-            $result =
-                $stmt->get_result();
-
-
-            $locked_plan =
-                $result->fetch_assoc();
-
-
-            $stmt->close();
-
-
-            if (!$locked_plan) {
-
-                throw new Exception(
-                    "Your current subscription plan no longer exists."
-                );
-
-            }
-
-
-            /*
-            |--------------------------------------------------------------------------
-            | RECHECK MEMBER COUNT
-            |--------------------------------------------------------------------------
-            */
-
-            $sql = "
-                SELECT COUNT(*) AS total
-
-                FROM members m
-
-                INNER JOIN gyms g
-                    ON m.gym_id = g.gym_id
-
-                WHERE g.owner_id = ?
-            ";
-
-
-            $stmt =
-                $conn->prepare($sql);
-
-
-            if (!$stmt) {
-
-                throw new Exception(
-                    "Unable to verify current member count."
-                );
-
-            }
-
-
-            $stmt->bind_param(
-                "i",
-                $owner_id
-            );
-
-
-            if (!$stmt->execute()) {
-
-                $stmt->close();
-
-                throw new Exception(
-                    "Unable to verify current member count."
-                );
-
-            }
-
-
-            $result =
-                $stmt->get_result();
-
-
-            $row =
-                $result->fetch_assoc();
-
-
-            $locked_member_count =
-                (int)
-                ($row["total"] ?? 0);
-
-
-            $stmt->close();
-
-
-            /*
-            |--------------------------------------------------------------------------
-            | FINAL MEMBER LIMIT CHECK
-            |--------------------------------------------------------------------------
-            */
-
-            if (
-                $locked_plan["member_limit"] !== null
-            ) {
-
-                $locked_limit =
-                    (int)
-                    $locked_plan[
-                        "member_limit"
-                    ];
-
-
-                if (
-                    $locked_member_count >
-                    $locked_limit
-                ) {
-
-                    throw new Exception(
-                        "Your gym currently has " .
-                        number_format(
-                            $locked_member_count
-                        ) .
-                        " members, but your " .
-                        $locked_plan["plan_name"] .
-                        " plan supports only " .
-                        number_format(
-                            $locked_limit
-                        ) .
-                        " members."
-                    );
-
-                }
-
-            }
-
-
-            /*
-            |--------------------------------------------------------------------------
-            | RE-CALCULATE DATES FROM LOCKED SUBSCRIPTION
-            |--------------------------------------------------------------------------
-            |
-            | This prevents the browser/display values from being
-            | used for the actual database operation.
-            |
-            */
-
-            $locked_start =
-                new DateTime(
-                    $locked_current["end_date"]
-                );
-
-
-            $locked_start->modify(
-                "+1 day"
-            );
-
-
-            $final_start_date =
-                $locked_start->format(
-                    "Y-m-d"
-                );
-
-
-            $final_end_date =
-                calculateMonthlyEndDate(
-                    $final_start_date
-                );
-
-
-            if (!$final_end_date) {
-
-                throw new Exception(
-                    "Unable to calculate the renewal end date."
-                );
-
-            }
-
-
-            /*
-            |--------------------------------------------------------------------------
-            | INSERT RENEWAL AS SCHEDULED
-            |--------------------------------------------------------------------------
-            |
-            | IMPORTANT:
-            |
-            | The current subscription remains untouched.
-            |
-            | Example:
-            |
-            | ID 1 | Basic   | 24 Aug -> 23 Sep | active
-            | ID 2 | Basic   | 24 Sep -> 23 Oct | scheduled
-            |
-            | subscription_cron.php will later change:
-            |
-            | ID 1 -> expired
-            | ID 2 -> active
-            |
-            */
-
-            $sql = "
-                INSERT INTO gym_owner_subscriptions
-                (
-                    owner_id,
-                    subscription_plan_id,
-                    start_date,
-                    end_date,
-                    status,
-                    created_at
-                )
-
-                VALUES
-                (
-                    ?,
-                    ?,
-                    ?,
-                    ?,
-                    'scheduled',
-                    NOW()
-                )
-            ";
-
-
-            $stmt =
-                $conn->prepare($sql);
-
-
-            if (!$stmt) {
-
-                throw new Exception(
-                    "Unable to prepare the renewal."
-                );
-
-            }
-
-
-            $stmt->bind_param(
-                "iiss",
-                $owner_id,
-                $locked_plan_id,
-                $final_start_date,
-                $final_end_date
-            );
-
-
-            if (!$stmt->execute()) {
-
-                $stmt->close();
-
-                throw new Exception(
-                    "Unable to create the renewal."
-                );
-
-            }
-
-
-            $stmt->close();
-
-
-            /*
-            |--------------------------------------------------------------------------
-            | COMMIT
-            |--------------------------------------------------------------------------
-            */
-
-            $conn->commit();
-
-
-            /*
-            |--------------------------------------------------------------------------
-            | SUCCESS MESSAGE
-            |--------------------------------------------------------------------------
-            */
-
-            $_SESSION[
-                "subscription_change_success"
-            ] =
-                "Your " .
-                $locked_plan["plan_name"] .
-                " subscription has been renewed successfully. " .
-                "Your current subscription remains active until " .
-                formatDate(
-                    $locked_current["end_date"]
-                ) .
-                ". Your renewed subscription will start on " .
-                formatDate(
-                    $final_start_date
-                ) .
-                ".";
-
-
-            /*
-            |--------------------------------------------------------------------------
-            | REDIRECT
-            |--------------------------------------------------------------------------
-            */
-
-            header(
-                "Location: my_subscription.php"
-            );
-
-            exit();
-
-        }
-        catch (Exception $e) {
-
-            $conn->rollback();
-
-            $error =
-                $e->getMessage();
-
-        }
+        /*
+        |--------------------------------------------------------------------------
+        | Store Renewal Intent in Session
+        |--------------------------------------------------------------------------
+        |
+        | payment_checkout.php should verify these values against
+        | the database again.
+        |
+        */
+
+        $_SESSION[
+            "pending_subscription_plan_id"
+        ] =
+            (int)
+            $current_subscription[
+                "subscription_plan_id"
+            ];
+
+
+        $_SESSION[
+            "pending_subscription_start_date"
+        ] =
+            $renewal_start_date;
+
+
+        $_SESSION[
+            "pending_subscription_end_date"
+        ] =
+            $renewal_end_date;
+
+
+        $_SESSION[
+            "pending_subscription_type"
+        ] =
+            "renewal";
+
+
+        $_SESSION[
+            "pending_subscription_id"
+        ] =
+            (int)
+            $current_subscription[
+                "subscription_id"
+            ];
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Redirect to Payment
+        |--------------------------------------------------------------------------
+        |
+        | renewal=1 allows payment_checkout.php to know that this
+        | payment is for a renewal rather than a new plan/change.
+        |
+        */
+
+        header(
+            "Location: payment_checkout.php?plan_id=" .
+            (int)
+            $current_subscription[
+                "subscription_plan_id"
+            ] .
+            "&renewal=1"
+        );
+
+        exit();
 
     }
 
@@ -1506,6 +1021,26 @@ if (
         }
 
 
+        .payment-notice {
+
+            background: #eff6ff;
+
+            border:
+                1px solid #bfdbfe;
+
+            color: #1e40af;
+
+            padding: 18px;
+
+            border-radius: 10px;
+
+            margin-top: 20px;
+
+            line-height: 1.6;
+
+        }
+
+
         .member-info {
 
             background: #f8fafc;
@@ -1631,7 +1166,7 @@ if (
             </h1>
 
             <p>
-                Review your renewal before confirming.
+                Review your renewal before payment.
             </p>
 
         </div>
@@ -1658,7 +1193,7 @@ if (
             <div class="notice notice-error">
 
                 <strong>
-                    Unable to renew subscription
+                    Unable to continue
                 </strong>
 
                 <br><br>
@@ -1702,7 +1237,7 @@ if (
                 Your current subscription will remain
                 active until its existing expiry date.
 
-                The renewal will begin immediately after
+                The renewal will start immediately after
                 the current subscription ends.
 
             </p>
@@ -1869,7 +1404,7 @@ if (
 
 
 
-            <!-- IMPORTANT INFORMATION -->
+            <!-- CURRENT SUBSCRIPTION NOTICE -->
 
             <div class="notice notice-warning">
 
@@ -1926,12 +1461,14 @@ if (
 
                     ?>
 
-                </strong>.
+                </strong>
+
+                after successful payment.
 
                 <br><br>
 
-                You will not lose any remaining time
-                from your current subscription.
+                You will not lose any remaining time from
+                your current subscription.
 
             </div>
 
@@ -1962,6 +1499,9 @@ if (
                 </strong>
 
                 members.
+
+                <br><br>
+
 
                 <?php if (
                     $current_subscription[
@@ -2001,6 +1541,7 @@ if (
 
 
                 <?php endif; ?>
+
 
             </div>
 
@@ -2082,17 +1623,77 @@ if (
 
                     <br><br>
 
-                    You cannot create another renewal
-                    while a future subscription is already
+                    You cannot create another renewal while
+                    a future subscription is already
                     scheduled.
 
                 </div>
 
 
-            <!-- CONFIRM FORM -->
+            <!-- PAYMENT -->
 
             <?php else: ?>
 
+
+                <div class="payment-notice">
+
+                    <strong>
+                        Payment required
+                    </strong>
+
+                    <br><br>
+
+                    Your renewal has not been created yet.
+
+                    You will be taken to the payment checkout
+                    to complete payment for:
+
+                    <br><br>
+
+                    <strong>
+
+                        <?php
+
+                        echo e(
+                            $current_subscription[
+                                "plan_name"
+                            ]
+                        );
+
+                        ?>
+
+                    </strong>
+
+                    —
+
+                    <strong>
+
+                        Rs.
+
+                        <?php
+
+                        echo number_format(
+                            (float)
+                            $current_subscription[
+                                "price"
+                            ],
+                            2
+                        );
+
+                        ?>
+
+                    </strong>
+
+                    <br><br>
+
+                    The renewal will only be created after
+                    the payment is successfully verified.
+
+                </div>
+
+
+
+                <!-- CONFIRM FORM -->
 
                 <form
                     method="POST"
@@ -2104,10 +1705,12 @@ if (
                         type="hidden"
                         name="subscription_id"
                         value="<?php
+
                         echo (int)
                             $current_subscription[
                                 "subscription_id"
                             ];
+
                         ?>"
                     >
 
@@ -2119,7 +1722,7 @@ if (
                             type="submit"
                             class="button button-primary"
                         >
-                            Confirm Renewal
+                            Proceed to Payment
                         </button>
 
 
@@ -2155,16 +1758,30 @@ if (
 function confirmRenewal()
 {
     return confirm(
-        "Are you sure you want to renew your " +
+        "Continue to payment for your " +
+
         <?php
         echo json_encode(
             $current_subscription["plan_name"]
         );
         ?> +
-        " subscription?\n\n" +
 
-        "Your current subscription will remain active " +
-        "until " +
+        " renewal?\n\n" +
+
+        "Amount: Rs. " +
+
+        <?php
+        echo json_encode(
+            number_format(
+                (float)
+                $current_subscription["price"],
+                2
+            )
+        );
+        ?> +
+
+        "\n\nCurrent subscription ends: " +
+
         <?php
         echo json_encode(
             formatDate(
@@ -2172,9 +1789,9 @@ function confirmRenewal()
             )
         );
         ?> +
-        ".\n\n" +
 
-        "The renewed subscription will start on " +
+        "\nRenewal starts: " +
+
         <?php
         echo json_encode(
             formatDate(
@@ -2182,7 +1799,9 @@ function confirmRenewal()
             )
         );
         ?> +
-        "."
+
+        "\n\nThe renewal will only be created " +
+        "after successful payment."
     );
 }
 
