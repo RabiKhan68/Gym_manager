@@ -1,26 +1,25 @@
 <?php
 
-
 date_default_timezone_set("Asia/Karachi");
 
-$today = date("Y-m-d");
 
 /*
 |--------------------------------------------------------------------------
 | OWNER SUBSCRIPTION CHECK
 |--------------------------------------------------------------------------
 |
-| This file protects owner-only management pages.
+| Protects owner-only management pages.
 |
 | Requirements:
 |
 | - Owner must be logged in.
-| - Owner must have a subscription.
-| - Subscription must be active.
-| - Today's date must be between start_date and end_date.
+| - Owner must have an active subscription.
+| - Subscription must have started.
+| - Subscription must not have expired.
 |
-| If the subscription is not valid, the owner is redirected to
-| my_subscription.php.
+| If no valid subscription exists:
+|
+|     Redirect to my_subscription.php
 |
 |--------------------------------------------------------------------------
 */
@@ -28,7 +27,7 @@ $today = date("Y-m-d");
 
 /*
 |--------------------------------------------------------------------------
-| Make sure session exists
+| SESSION
 |--------------------------------------------------------------------------
 */
 
@@ -41,7 +40,7 @@ if (session_status() === PHP_SESSION_NONE) {
 
 /*
 |--------------------------------------------------------------------------
-| Owner login check
+| OWNER LOGIN
 |--------------------------------------------------------------------------
 */
 
@@ -60,15 +59,7 @@ $owner_id =
 
 /*
 |--------------------------------------------------------------------------
-| Database connection
-|--------------------------------------------------------------------------
-|
-| This file is inside:
-|
-| backend/check_subscription.php
-|
-| db.php is in the same directory.
-|
+| DATABASE
 |--------------------------------------------------------------------------
 */
 
@@ -77,18 +68,7 @@ require_once __DIR__ . "/db.php";
 
 /*
 |--------------------------------------------------------------------------
-| Pakistan timezone
-|--------------------------------------------------------------------------
-*/
-
-date_default_timezone_set(
-    "Asia/Karachi"
-);
-
-
-/*
-|--------------------------------------------------------------------------
-| Today's date
+| TODAY
 |--------------------------------------------------------------------------
 */
 
@@ -98,7 +78,23 @@ $today =
 
 /*
 |--------------------------------------------------------------------------
-| Find owner's latest subscription
+| FIND CURRENT VALID SUBSCRIPTION
+|--------------------------------------------------------------------------
+|
+| IMPORTANT:
+|
+| We do NOT simply select the latest subscription.
+|
+| We specifically search for a subscription that is:
+|
+|     status = active
+|     start_date <= today
+|     end_date >= today
+|
+| This means a scheduled future subscription will NOT
+| incorrectly lock the owner while the current subscription
+| is still active.
+|
 |--------------------------------------------------------------------------
 */
 
@@ -111,7 +107,9 @@ $sql = "
         s.end_date,
         s.status,
 
-        sp.plan_name
+        sp.plan_name,
+        sp.price,
+        sp.member_limit
 
     FROM gym_owner_subscriptions s
 
@@ -121,7 +119,14 @@ $sql = "
 
     WHERE s.owner_id = ?
 
+    AND s.status = 'active'
+
+    AND s.start_date <= ?
+
+    AND s.end_date >= ?
+
     ORDER BY
+        s.end_date DESC,
         s.subscription_id DESC
 
     LIMIT 1
@@ -145,12 +150,22 @@ if (!$stmt) {
 
 
 $stmt->bind_param(
-    "i",
-    $owner_id
+    "iss",
+    $owner_id,
+    $today,
+    $today
 );
 
 
-$stmt->execute();
+if (!$stmt->execute()) {
+
+    $stmt->close();
+
+    die(
+        "Subscription check failed."
+    );
+
+}
 
 
 $result =
@@ -166,14 +181,14 @@ $stmt->close();
 
 /*
 |--------------------------------------------------------------------------
-| No subscription
+| NO VALID SUBSCRIPTION
 |--------------------------------------------------------------------------
 */
 
 if (!$subscription) {
 
     header(
-        "Location: ../my_subscription.php?subscription=required"
+        "Location: my_subscription.php?subscription=required"
     );
 
     exit();
@@ -183,79 +198,8 @@ if (!$subscription) {
 
 /*
 |--------------------------------------------------------------------------
-| Subscription information
+| VALID SUBSCRIPTION
 |--------------------------------------------------------------------------
-*/
-
-$status =
-    strtolower(
-        trim(
-            (string)
-            $subscription["status"]
-        )
-    );
-
-
-$start_date =
-    $subscription["start_date"];
-
-
-$end_date =
-    $subscription["end_date"];
-
-
-/*
-|--------------------------------------------------------------------------
-| Check dates
-|--------------------------------------------------------------------------
-*/
-
-$subscription_valid = (
-
-    $status === "active"
-
-    &&
-
-    !empty($start_date)
-
-    &&
-
-    !empty($end_date)
-
-    &&
-
-    $start_date <= $today
-
-    &&
-
-    $end_date >= $today
-
-);
-
-
-/*
-|--------------------------------------------------------------------------
-| Subscription is NOT valid
-|--------------------------------------------------------------------------
-*/
-
-if (!$subscription_valid) {
-
-    header(
-        "Location: ../my_subscription.php?subscription=required"
-    );
-
-    exit();
-
-}
-
-
-/*
-|--------------------------------------------------------------------------
-| Subscription is valid
-|--------------------------------------------------------------------------
-|
-| Nothing happens here.
 |
 | The protected page continues normally.
 |

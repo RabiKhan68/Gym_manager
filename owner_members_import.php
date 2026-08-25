@@ -4,6 +4,7 @@ session_start();
 
 require_once "backend/db.php";
 
+
 /*
 |--------------------------------------------------------------------------
 | LOAD PHPSPREADSHEET
@@ -61,12 +62,34 @@ function e($value)
 if (!isset($_SESSION["owner_id"])) {
 
     header("Location: login.php");
+
     exit();
 
 }
 
 
-$owner_id = (int) $_SESSION["owner_id"];
+$owner_id =
+    (int) $_SESSION["owner_id"];
+
+
+/*
+|--------------------------------------------------------------------------
+| SUBSCRIPTION CHECK
+|--------------------------------------------------------------------------
+|
+| This protects the import page itself.
+|
+| IMPORTANT:
+|
+| The actual import confirmation below performs another
+| subscription check. This prevents a bypass through the
+| POST request or an expired/deleted subscription between
+| preview and confirmation.
+|
+|--------------------------------------------------------------------------
+*/
+
+require_once __DIR__ . "/backend/check_subscription.php";
 
 
 /*
@@ -79,14 +102,20 @@ $gym_sql = "
     SELECT
         gym_id,
         gym_name
+
     FROM gyms
+
     WHERE owner_id = ?
+
     ORDER BY gym_id ASC
+
     LIMIT 1
 ";
 
 
-$stmt = $conn->prepare($gym_sql);
+$stmt =
+    $conn->prepare($gym_sql);
+
 
 if (!$stmt) {
 
@@ -103,12 +132,27 @@ $stmt->bind_param(
     $owner_id
 );
 
-$stmt->execute();
 
-$gym_result = $stmt->get_result();
+if (!$stmt->execute()) {
+
+    $stmt->close();
+
+    die(
+        "Unable to find your gym."
+    );
+
+}
 
 
-if ($gym_result->num_rows === 0) {
+$gym_result =
+    $stmt->get_result();
+
+
+if (
+    $gym_result->num_rows === 0
+) {
+
+    $stmt->close();
 
     die(
         "No gym is associated with your account. " .
@@ -118,11 +162,197 @@ if ($gym_result->num_rows === 0) {
 }
 
 
-$gym = $gym_result->fetch_assoc();
+$gym =
+    $gym_result->fetch_assoc();
 
-$gym_id = (int) $gym["gym_id"];
 
-$gym_name = $gym["gym_name"];
+$stmt->close();
+
+
+$gym_id =
+    (int) $gym["gym_id"];
+
+
+$gym_name =
+    $gym["gym_name"];
+
+
+/*
+|--------------------------------------------------------------------------
+| FUNCTION: GET CURRENT SUBSCRIPTION
+|--------------------------------------------------------------------------
+|
+| Returns:
+|
+| [
+|     subscription_id,
+|     plan_name,
+|     member_limit
+| ]
+|
+| or null.
+|
+|--------------------------------------------------------------------------
+*/
+
+function get_current_owner_subscription(
+    $conn,
+    $owner_id
+) {
+
+    $today =
+        date("Y-m-d");
+
+
+    $sql = "
+        SELECT
+
+            s.subscription_id,
+
+            s.subscription_plan_id,
+
+            s.start_date,
+
+            s.end_date,
+
+            s.status,
+
+            sp.plan_name,
+
+            sp.member_limit
+
+        FROM gym_owner_subscriptions s
+
+        INNER JOIN subscription_plans sp
+
+            ON s.subscription_plan_id =
+               sp.subscription_plan_id
+
+        WHERE s.owner_id = ?
+
+        AND s.status = 'active'
+
+        AND s.start_date <= ?
+
+        AND s.end_date >= ?
+
+        ORDER BY
+
+            s.end_date DESC,
+
+            s.subscription_id DESC
+
+        LIMIT 1
+    ";
+
+
+    $stmt =
+        $conn->prepare($sql);
+
+
+    if (!$stmt) {
+
+        return null;
+
+    }
+
+
+    $stmt->bind_param(
+        "iss",
+        $owner_id,
+        $today,
+        $today
+    );
+
+
+    if (!$stmt->execute()) {
+
+        $stmt->close();
+
+        return null;
+
+    }
+
+
+    $result =
+        $stmt->get_result();
+
+
+    $subscription =
+        $result->fetch_assoc();
+
+
+    $stmt->close();
+
+
+    return $subscription ?: null;
+
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| FUNCTION: COUNT CURRENT MEMBERS
+|--------------------------------------------------------------------------
+*/
+
+function get_current_member_count(
+    $conn,
+    $gym_id
+) {
+
+    $sql = "
+        SELECT
+            COUNT(*) AS total
+
+        FROM members
+
+        WHERE gym_id = ?
+    ";
+
+
+    $stmt =
+        $conn->prepare($sql);
+
+
+    if (!$stmt) {
+
+        return null;
+
+    }
+
+
+    $stmt->bind_param(
+        "i",
+        $gym_id
+    );
+
+
+    if (!$stmt->execute()) {
+
+        $stmt->close();
+
+        return null;
+
+    }
+
+
+    $result =
+        $stmt->get_result();
+
+
+    $row =
+        $result->fetch_assoc();
+
+
+    $stmt->close();
+
+
+    return (int) (
+        $row["total"] ?? 0
+    );
+
+}
 
 
 /*
@@ -140,6 +370,63 @@ $preview_rows = [];
 $import_results = [];
 
 $show_preview = false;
+
+
+/*
+|--------------------------------------------------------------------------
+| CURRENT SUBSCRIPTION
+|--------------------------------------------------------------------------
+|
+| We load it now so the page can display the owner's
+| current member limit.
+|
+|--------------------------------------------------------------------------
+*/
+
+$current_subscription =
+    get_current_owner_subscription(
+        $conn,
+        $owner_id
+    );
+
+
+/*
+|--------------------------------------------------------------------------
+| SAFETY CHECK
+|--------------------------------------------------------------------------
+*/
+
+if (!$current_subscription) {
+
+    header(
+        "Location: my_subscription.php?subscription=required"
+    );
+
+    exit();
+
+}
+
+
+$member_limit =
+    $current_subscription["member_limit"] !== null
+    ? (int) $current_subscription["member_limit"]
+    : null;
+
+
+$current_member_count =
+    get_current_member_count(
+        $conn,
+        $gym_id
+    );
+
+
+if ($current_member_count === null) {
+
+    die(
+        "Unable to determine current member count."
+    );
+
+}
 
 
 /*
@@ -170,17 +457,12 @@ if (
     );
 
 
-    $output = fopen(
-        "php://output",
-        "w"
-    );
+    $output =
+        fopen(
+            "php://output",
+            "w"
+        );
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | CSV HEADER
-    |--------------------------------------------------------------------------
-    */
 
     fputcsv(
         $output,
@@ -193,12 +475,6 @@ if (
         ]
     );
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | EXAMPLE ROWS
-    |--------------------------------------------------------------------------
-    */
 
     fputcsv(
         $output,
@@ -239,10 +515,78 @@ if (
 
 if (
     $_SERVER["REQUEST_METHOD"] === "POST" &&
-    isset($_FILES["members_file"])
+    isset($_FILES["members_file"]) &&
+    !isset($_POST["confirm_import"])
 ) {
 
-    $file = $_FILES["members_file"];
+    $file =
+        $_FILES["members_file"];
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | IMPORTANT SUBSCRIPTION RECHECK
+    |--------------------------------------------------------------------------
+    */
+
+    $current_subscription =
+        get_current_owner_subscription(
+            $conn,
+            $owner_id
+        );
+
+
+    if (!$current_subscription) {
+
+        header(
+            "Location: my_subscription.php?subscription=required"
+        );
+
+        exit();
+
+    }
+
+
+    $member_limit =
+        $current_subscription["member_limit"] !== null
+        ? (int) $current_subscription["member_limit"]
+        : null;
+
+
+    $current_member_count =
+        get_current_member_count(
+            $conn,
+            $gym_id
+        );
+
+
+    if ($current_member_count === null) {
+
+        $error =
+            "Unable to determine your current member count.";
+
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | CHECK WHETHER LIMIT IS ALREADY REACHED
+    |--------------------------------------------------------------------------
+    */
+
+    elseif (
+        $member_limit !== null &&
+        $current_member_count >= $member_limit
+    ) {
+
+        $error =
+            "Your current subscription allows a maximum of " .
+            number_format($member_limit) .
+            " members. Your gym already has " .
+            number_format($current_member_count) .
+            " members. Please upgrade your subscription before importing more members.";
+
+    }
 
 
     /*
@@ -251,7 +595,7 @@ if (
     |--------------------------------------------------------------------------
     */
 
-    if (
+    elseif (
         $file["error"] !== UPLOAD_ERR_OK
     ) {
 
@@ -365,11 +709,13 @@ if (
             */
 
             $required_columns = [
+
                 "name",
                 "phone",
                 "email",
                 "joining_date",
                 "status"
+
             ];
 
 
@@ -448,11 +794,13 @@ if (
                     $value =
                         trim(
                             (string)
-                            ($row[
-                                $column_map[
-                                    $column
-                                ]
-                            ] ?? "")
+                            (
+                                $row[
+                                    $column_map[
+                                        $column
+                                    ]
+                                ] ?? ""
+                            )
                         );
 
 
@@ -485,38 +833,46 @@ if (
                 $name =
                     trim(
                         (string)
-                        ($row[
-                            $column_map["name"]
-                        ] ?? "")
+                        (
+                            $row[
+                                $column_map["name"]
+                            ] ?? ""
+                        )
                     );
 
 
                 $phone =
                     trim(
                         (string)
-                        ($row[
-                            $column_map["phone"]
-                        ] ?? "")
+                        (
+                            $row[
+                                $column_map["phone"]
+                            ] ?? ""
+                        )
                     );
 
 
                 $email =
                     trim(
                         (string)
-                        ($row[
-                            $column_map["email"]
-                        ] ?? "")
+                        (
+                            $row[
+                                $column_map["email"]
+                            ] ?? ""
+                        )
                     );
 
 
                 $joining_date =
                     trim(
                         (string)
-                        ($row[
-                            $column_map[
-                                "joining_date"
-                            ]
-                        ] ?? "")
+                        (
+                            $row[
+                                $column_map[
+                                    "joining_date"
+                                ]
+                            ] ?? ""
+                        )
                     );
 
 
@@ -524,9 +880,11 @@ if (
                     strtolower(
                         trim(
                             (string)
-                            ($row[
-                                $column_map["status"]
-                            ] ?? "active")
+                            (
+                                $row[
+                                    $column_map["status"]
+                                ] ?? "active"
+                            )
                         )
                     );
 
@@ -541,7 +899,9 @@ if (
 
 
                 /*
+                |--------------------------------------------------------------------------
                 | NAME
+                |--------------------------------------------------------------------------
                 */
 
                 if (
@@ -553,8 +913,7 @@ if (
 
                 }
                 elseif (
-                    mb_strlen($name) >
-                    100
+                    mb_strlen($name) > 100
                 ) {
 
                     $row_errors[] =
@@ -564,7 +923,9 @@ if (
 
 
                 /*
+                |--------------------------------------------------------------------------
                 | PHONE
+                |--------------------------------------------------------------------------
                 */
 
                 if (
@@ -582,7 +943,9 @@ if (
 
 
                 /*
+                |--------------------------------------------------------------------------
                 | EMAIL
+                |--------------------------------------------------------------------------
                 */
 
                 if (
@@ -600,7 +963,9 @@ if (
 
 
                 /*
+                |--------------------------------------------------------------------------
                 | DATE
+                |--------------------------------------------------------------------------
                 */
 
                 $normalized_date = "";
@@ -618,7 +983,7 @@ if (
 
                     /*
                     |--------------------------------------------------------------------------
-                    | Try Excel date number
+                    | EXCEL DATE NUMBER
                     |--------------------------------------------------------------------------
                     */
 
@@ -634,6 +999,7 @@ if (
                                 \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject(
                                     $joining_date
                                 );
+
 
                             $normalized_date =
                                 $date_object->format(
@@ -654,7 +1020,7 @@ if (
 
                     /*
                     |--------------------------------------------------------------------------
-                    | Try normal date
+                    | NORMAL DATE
                     |--------------------------------------------------------------------------
                     */
 
@@ -696,14 +1062,17 @@ if (
 
 
                 /*
+                |--------------------------------------------------------------------------
                 | STATUS
+                |--------------------------------------------------------------------------
                 */
 
                 if (
                     $status === ""
                 ) {
 
-                    $status = "active";
+                    $status =
+                        "active";
 
                 }
 
@@ -783,17 +1152,30 @@ if (
                     )
                 ) {
 
-
                     $duplicate_sql = "
                         SELECT
                             member_id
+
                         FROM members
+
                         WHERE gym_id = ?
+
                         AND (
-                            (? <> '' AND phone = ?)
+
+                            (
+                                ? <> ''
+                                AND phone = ?
+                            )
+
                             OR
-                            (? <> '' AND email = ?)
+
+                            (
+                                ? <> ''
+                                AND email = ?
+                            )
+
                         )
+
                         LIMIT 1
                     ";
 
@@ -826,8 +1208,7 @@ if (
 
 
                         if (
-                            $duplicate_result->num_rows >
-                            0
+                            $duplicate_result->num_rows > 0
                         ) {
 
                             $existing =
@@ -840,6 +1221,9 @@ if (
                                 ").";
 
                         }
+
+
+                        $duplicate_stmt->close();
 
                     }
 
@@ -887,6 +1271,110 @@ if (
                 throw new Exception(
                     "No valid member rows were found in the file."
                 );
+
+            }
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | MEMBER LIMIT CHECK FOR PREVIEW
+            |--------------------------------------------------------------------------
+            |
+            | Only rows that are actually valid can potentially
+            | become new members.
+            |
+            |--------------------------------------------------------------------------
+            */
+
+            $preview_valid_count = 0;
+
+
+            foreach (
+                $preview_rows as $preview_row
+            ) {
+
+                if (
+                    empty(
+                        $preview_row["errors"]
+                    )
+                ) {
+
+                    $preview_valid_count++;
+
+                }
+
+            }
+
+
+            if (
+                $member_limit !== null
+            ) {
+
+                $available_slots =
+                    $member_limit -
+                    $current_member_count;
+
+
+                if (
+                    $available_slots <= 0
+                ) {
+
+                    throw new Exception(
+                        "Your subscription member limit has already been reached. " .
+                        "Your plan allows " .
+                        number_format($member_limit) .
+                        " members and your gym currently has " .
+                        number_format($current_member_count) .
+                        "."
+                    );
+
+                }
+
+
+                if (
+                    $preview_valid_count >
+                    $available_slots
+                ) {
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | IMPORTANT
+                    |--------------------------------------------------------------------------
+                    |
+                    | We do NOT allow a partial import.
+                    |
+                    | Example:
+                    |
+                    | Limit = 20
+                    | Current = 18
+                    | Valid Excel rows = 5
+                    |
+                    | Importing 2 and silently skipping 3 would be confusing.
+                    |
+                    | Instead, we require the owner to reduce the file
+                    | to the available 2 slots or upgrade.
+                    |
+                    |--------------------------------------------------------------------------
+                    */
+
+                    $overflow =
+                        $preview_valid_count -
+                        $available_slots;
+
+
+                    throw new Exception(
+                        "Your current subscription allows only " .
+                        number_format($available_slots) .
+                        " more member(s). " .
+                        "This file contains " .
+                        number_format($preview_valid_count) .
+                        " valid new member(s). " .
+                        "Please remove " .
+                        number_format($overflow) .
+                        " member(s) from the file or upgrade your subscription."
+                    );
+
+                }
 
             }
 
@@ -942,282 +1430,586 @@ if (
     isset($_POST["confirm_import"])
 ) {
 
+    /*
+    |--------------------------------------------------------------------------
+    | RECHECK SUBSCRIPTION
+    |--------------------------------------------------------------------------
+    |
+    | This is extremely important.
+    |
+    | The owner may have uploaded the file while subscribed,
+    | but the subscription could have expired before pressing
+    | Confirm Import.
+    |
+    |--------------------------------------------------------------------------
+    */
 
-    $stored_preview =
-        $_SESSION[
-            "member_import_preview"
-        ] ?? null;
+    $current_subscription =
+        get_current_owner_subscription(
+            $conn,
+            $owner_id
+        );
+
+
+    if (!$current_subscription) {
+
+        unset(
+            $_SESSION[
+                "member_import_preview"
+            ]
+        );
+
+
+        header(
+            "Location: my_subscription.php?subscription=required"
+        );
+
+        exit();
+
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | GET CURRENT MEMBER COUNT AGAIN
+    |--------------------------------------------------------------------------
+    */
+
+    $current_member_count =
+        get_current_member_count(
+            $conn,
+            $gym_id
+        );
 
 
     if (
-        !$stored_preview
+        $current_member_count === null
     ) {
 
         $error =
-            "Import session expired. Please upload the file again.";
-
-    }
-    elseif (
-        (int)
-        $stored_preview["owner_id"]
-        !==
-        $owner_id
-    ) {
-
-        $error =
-            "Security validation failed.";
-
-    }
-    elseif (
-        (int)
-        $stored_preview["gym_id"]
-        !==
-        $gym_id
-    ) {
-
-        $error =
-            "Gym validation failed.";
+            "Unable to determine the current member count.";
 
     }
     else {
 
+        $member_limit =
+            $current_subscription["member_limit"] !== null
+            ? (int)
+              $current_subscription["member_limit"]
+            : null;
 
-        $rows =
-            $stored_preview["rows"];
 
+        /*
+        |--------------------------------------------------------------------------
+        | LOAD STORED PREVIEW
+        |--------------------------------------------------------------------------
+        */
 
-        $valid_rows = [];
-
-
-        foreach (
-            $rows as $row
-        ) {
-
-            if (
-                empty(
-                    $row["errors"]
-                )
-            ) {
-
-                $valid_rows[] =
-                    $row;
-
-            }
-
-        }
+        $stored_preview =
+            $_SESSION[
+                "member_import_preview"
+            ] ?? null;
 
 
         if (
-            count($valid_rows) === 0
+            !$stored_preview
         ) {
 
             $error =
-                "There are no valid rows to import.";
+                "Import session expired. Please upload the file again.";
 
-            $show_preview = true;
+        }
+        elseif (
+            (int)
+            $stored_preview["owner_id"]
+            !==
+            $owner_id
+        ) {
 
-            $preview_rows =
-                $rows;
+            $error =
+                "Security validation failed.";
+
+        }
+        elseif (
+            (int)
+            $stored_preview["gym_id"]
+            !==
+            $gym_id
+        ) {
+
+            $error =
+                "Gym validation failed.";
 
         }
         else {
 
-
-            /*
-            |--------------------------------------------------------------------------
-            | START TRANSACTION
-            |--------------------------------------------------------------------------
-            */
-
-            $conn->begin_transaction();
+            $rows =
+                $stored_preview["rows"];
 
 
-            try {
+            $valid_rows = [];
 
 
-                $insert_sql = "
-                    INSERT INTO members
-                    (
-                        gym_id,
-                        name,
-                        phone,
-                        email,
-                        joining_date,
-                        status
+            foreach (
+                $rows as $row
+            ) {
+
+                if (
+                    empty(
+                        $row["errors"]
                     )
-                    VALUES
-                    (?, ?, ?, ?, ?, ?)
-                ";
-
-
-                $insert_stmt =
-                    $conn->prepare(
-                        $insert_sql
-                    );
-
-
-                if (
-                    !$insert_stmt
                 ) {
 
-                    throw new Exception(
-                        $conn->error
-                    );
-
-                }
-
-
-                $imported_count = 0;
-
-                $failed_count = 0;
-
-
-                foreach (
-                    $valid_rows as $row
-                ) {
-
-
-                    /*
-                    |--------------------------------------------------------------------------
-                    | FINAL DUPLICATE CHECK
-                    |--------------------------------------------------------------------------
-                    |
-                    | Important:
-                    | We check again immediately before insertion.
-                    |
-                    */
-
-                    $check_sql = "
-                        SELECT
-                            member_id
-                        FROM members
-                        WHERE gym_id = ?
-                        AND (
-                            (? <> '' AND phone = ?)
-                            OR
-                            (? <> '' AND email = ?)
-                        )
-                        LIMIT 1
-                    ";
-
-
-                    $check_stmt =
-                        $conn->prepare(
-                            $check_sql
-                        );
-
-
-                    $check_stmt->bind_param(
-                        "issss",
-                        $gym_id,
-                        $row["phone"],
-                        $row["phone"],
-                        $row["email"],
-                        $row["email"]
-                    );
-
-
-                    $check_stmt->execute();
-
-
-                    $check_result =
-                        $check_stmt->get_result();
-
-
-                    if (
-                        $check_result->num_rows >
-                        0
-                    ) {
-
-                        $failed_count++;
-
-                        continue;
-
-                    }
-
-
-                    /*
-                    |--------------------------------------------------------------------------
-                    | INSERT
-                    |--------------------------------------------------------------------------
-                    */
-
-                    $insert_stmt->bind_param(
-                        "isssss",
-                        $gym_id,
-                        $row["name"],
-                        $row["phone"],
-                        $row["email"],
-                        $row["joining_date"],
-                        $row["status"]
-                    );
-
-
-                    if (
-                        $insert_stmt->execute()
-                    ) {
-
-                        $imported_count++;
-
-                    }
-                    else {
-
-                        $failed_count++;
-
-                    }
-
-                }
-
-
-                $conn->commit();
-
-
-                /*
-                |--------------------------------------------------------------------------
-                | CLEAR PREVIEW
-                |--------------------------------------------------------------------------
-                */
-
-                unset(
-                    $_SESSION[
-                        "member_import_preview"
-                    ]
-                );
-
-
-                $success =
-                    $imported_count .
-                    " member(s) imported successfully.";
-
-
-                if (
-                    $failed_count > 0
-                ) {
-
-                    $success .=
-                        " " .
-                        $failed_count .
-                        " member(s) were skipped because they already existed.";
+                    $valid_rows[] =
+                        $row;
 
                 }
 
             }
-            catch (
-                Throwable $exception
+
+
+            if (
+                count($valid_rows) === 0
             ) {
 
-                $conn->rollback();
-
-
                 $error =
-                    "Import failed. No members were added. " .
-                    $exception->getMessage();
-
+                    "There are no valid rows to import.";
 
                 $show_preview = true;
 
                 $preview_rows =
                     $rows;
+
+            }
+            else {
+
+                /*
+                |--------------------------------------------------------------------------
+                | FINAL MEMBER LIMIT CHECK
+                |--------------------------------------------------------------------------
+                */
+
+                if (
+                    $member_limit !== null
+                ) {
+
+                    $available_slots =
+                        $member_limit -
+                        $current_member_count;
+
+
+                    if (
+                        $available_slots <= 0
+                    ) {
+
+                        $error =
+                            "Your subscription member limit has been reached. " .
+                            "Please upgrade your subscription to import more members.";
+
+                        $show_preview = true;
+
+                        $preview_rows =
+                            $rows;
+
+                    }
+                    elseif (
+                        count($valid_rows) >
+                        $available_slots
+                    ) {
+
+                        $error =
+                            "Your subscription only allows " .
+                            number_format($available_slots) .
+                            " more member(s), but this import contains " .
+                            number_format(count($valid_rows)) .
+                            " valid member(s). " .
+                            "Please reduce the import file or upgrade your subscription.";
+
+                        $show_preview = true;
+
+                        $preview_rows =
+                            $rows;
+
+                    }
+
+                }
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | CONTINUE ONLY IF LIMIT IS OK
+                |--------------------------------------------------------------------------
+                */
+
+                if (
+                    $error === ""
+                ) {
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | START TRANSACTION
+                    |--------------------------------------------------------------------------
+                    */
+
+                    $conn->begin_transaction();
+
+
+                    try {
+
+                        /*
+                        |--------------------------------------------------------------------------
+                        | FINAL SUBSCRIPTION CHECK INSIDE TRANSACTION
+                        |--------------------------------------------------------------------------
+                        |
+                        | This protects the actual insertion operation.
+                        |
+                        |--------------------------------------------------------------------------
+                        */
+
+                        $final_subscription =
+                            get_current_owner_subscription(
+                                $conn,
+                                $owner_id
+                            );
+
+
+                        if (
+                            !$final_subscription
+                        ) {
+
+                            throw new Exception(
+                                "Your subscription is no longer active. " .
+                                "Please purchase or renew a subscription."
+                            );
+
+                        }
+
+
+                        $final_member_limit =
+                            $final_subscription[
+                                "member_limit"
+                            ] !== null
+                            ? (int)
+                              $final_subscription[
+                                  "member_limit"
+                              ]
+                            : null;
+
+
+                        /*
+                        |--------------------------------------------------------------------------
+                        | FINAL MEMBER COUNT
+                        |--------------------------------------------------------------------------
+                        */
+
+                        $final_member_count =
+                            get_current_member_count(
+                                $conn,
+                                $gym_id
+                            );
+
+
+                        if (
+                            $final_member_count === null
+                        ) {
+
+                            throw new Exception(
+                                "Unable to verify the current member count."
+                            );
+
+                        }
+
+
+                        if (
+                            $final_member_limit !== null
+                        ) {
+
+                            $final_available_slots =
+                                $final_member_limit -
+                                $final_member_count;
+
+
+                            if (
+                                count($valid_rows) >
+                                $final_available_slots
+                            ) {
+
+                                throw new Exception(
+                                    "The subscription member limit has been reached or there are not enough member slots available. " .
+                                    "Your plan allows " .
+                                    number_format(
+                                        $final_member_limit
+                                    ) .
+                                    " members and your gym currently has " .
+                                    number_format(
+                                        $final_member_count
+                                    ) .
+                                    "."
+                                );
+
+                            }
+
+                        }
+
+
+                        /*
+                        |--------------------------------------------------------------------------
+                        | PREPARE INSERT
+                        |--------------------------------------------------------------------------
+                        */
+
+                        $insert_sql = "
+                            INSERT INTO members
+                            (
+                                gym_id,
+                                name,
+                                phone,
+                                email,
+                                joining_date,
+                                status
+                            )
+
+                            VALUES
+                            (?, ?, ?, ?, ?, ?)
+                        ";
+
+
+                        $insert_stmt =
+                            $conn->prepare(
+                                $insert_sql
+                            );
+
+
+                        if (
+                            !$insert_stmt
+                        ) {
+
+                            throw new Exception(
+                                $conn->error
+                            );
+
+                        }
+
+
+                        $imported_count = 0;
+
+                        $failed_count = 0;
+
+
+                        /*
+                        |--------------------------------------------------------------------------
+                        | INSERT VALID ROWS
+                        |--------------------------------------------------------------------------
+                        */
+
+                        foreach (
+                            $valid_rows as $row
+                        ) {
+
+                            /*
+                            |--------------------------------------------------------------------------
+                            | FINAL DUPLICATE CHECK
+                            |--------------------------------------------------------------------------
+                            |
+                            | Someone could have added the same member
+                            | after the preview was generated.
+                            |
+                            |--------------------------------------------------------------------------
+                            */
+
+                            $check_sql = "
+                                SELECT
+                                    member_id
+
+                                FROM members
+
+                                WHERE gym_id = ?
+
+                                AND (
+
+                                    (
+                                        ? <> ''
+                                        AND phone = ?
+                                    )
+
+                                    OR
+
+                                    (
+                                        ? <> ''
+                                        AND email = ?
+                                    )
+
+                                )
+
+                                LIMIT 1
+                            ";
+
+
+                            $check_stmt =
+                                $conn->prepare(
+                                    $check_sql
+                                );
+
+
+                            if (
+                                !$check_stmt
+                            ) {
+
+                                throw new Exception(
+                                    $conn->error
+                                );
+
+                            }
+
+
+                            $check_stmt->bind_param(
+                                "issss",
+                                $gym_id,
+                                $row["phone"],
+                                $row["phone"],
+                                $row["email"],
+                                $row["email"]
+                            );
+
+
+                            if (
+                                !$check_stmt->execute()
+                            ) {
+
+                                $check_stmt->close();
+
+                                throw new Exception(
+                                    "Unable to perform duplicate check."
+                                );
+
+                            }
+
+
+                            $check_result =
+                                $check_stmt->get_result();
+
+
+                            $duplicate_exists =
+                                $check_result->num_rows > 0;
+
+
+                            $check_stmt->close();
+
+
+                            if (
+                                $duplicate_exists
+                            ) {
+
+                                $failed_count++;
+
+                                continue;
+
+                            }
+
+
+                            /*
+                            |--------------------------------------------------------------------------
+                            | INSERT MEMBER
+                            |--------------------------------------------------------------------------
+                            */
+
+                            $insert_stmt->bind_param(
+                                "isssss",
+                                $gym_id,
+                                $row["name"],
+                                $row["phone"],
+                                $row["email"],
+                                $row["joining_date"],
+                                $row["status"]
+                            );
+
+
+                            if (
+                                $insert_stmt->execute()
+                            ) {
+
+                                $imported_count++;
+
+                            }
+                            else {
+
+                                throw new Exception(
+                                    $insert_stmt->error
+                                );
+
+                            }
+
+                        }
+
+
+                        $insert_stmt->close();
+
+
+                        /*
+                        |--------------------------------------------------------------------------
+                        | COMMIT
+                        |--------------------------------------------------------------------------
+                        */
+
+                        $conn->commit();
+
+
+                        /*
+                        |--------------------------------------------------------------------------
+                        | CLEAR PREVIEW
+                        |--------------------------------------------------------------------------
+                        */
+
+                        unset(
+                            $_SESSION[
+                                "member_import_preview"
+                            ]
+                        );
+
+
+                        /*
+                        |--------------------------------------------------------------------------
+                        | SUCCESS MESSAGE
+                        |--------------------------------------------------------------------------
+                        */
+
+                        $success =
+                            $imported_count .
+                            " member(s) imported successfully.";
+
+
+                        if (
+                            $failed_count > 0
+                        ) {
+
+                            $success .=
+                                " " .
+                                $failed_count .
+                                " member(s) were skipped because they already existed.";
+
+                        }
+
+                    }
+                    catch (
+                        Throwable $exception
+                    ) {
+
+                        $conn->rollback();
+
+
+                        $error =
+                            "Import failed. No members were added. " .
+                            $exception->getMessage();
+
+
+                        $show_preview = true;
+
+                        $preview_rows =
+                            $rows;
+
+                    }
+
+                }
 
             }
 
@@ -1234,11 +2026,12 @@ if (
 |--------------------------------------------------------------------------
 */
 
-$preview_total = count(
-    $preview_rows
-);
+$preview_total =
+    count($preview_rows);
+
 
 $preview_valid = 0;
+
 
 $preview_invalid = 0;
 
@@ -1403,6 +2196,42 @@ foreach (
                 1px solid #bfdbfe;
 
             color: #1e40af;
+
+            padding: 14px 16px;
+
+            border-radius: 9px;
+
+            margin-bottom: 20px;
+
+        }
+
+
+        .subscription-info {
+
+            background: #f0fdf4;
+
+            border:
+                1px solid #bbf7d0;
+
+            color: #166534;
+
+            padding: 14px 16px;
+
+            border-radius: 9px;
+
+            margin-bottom: 20px;
+
+        }
+
+
+        .subscription-warning {
+
+            background: #fffbeb;
+
+            border:
+                1px solid #fde68a;
+
+            color: #92400e;
 
             padding: 14px 16px;
 
@@ -1918,6 +2747,107 @@ foreach (
         </div>
 
 
+        <!-- SUBSCRIPTION INFORMATION -->
+
+        <?php if ($member_limit !== null): ?>
+
+            <div class="subscription-info">
+
+                <strong>
+                    Current subscription:
+                </strong>
+
+                <?php
+                echo e(
+                    $current_subscription[
+                        "plan_name"
+                    ]
+                );
+                ?>
+
+                <br>
+
+                Member limit:
+
+                <strong>
+
+                    <?php
+                    echo number_format(
+                        $member_limit
+                    );
+                    ?>
+
+                </strong>
+
+                members
+
+                <br>
+
+                Current members:
+
+                <strong>
+
+                    <?php
+                    echo number_format(
+                        $current_member_count
+                    );
+                    ?>
+
+                </strong>
+
+
+                <?php
+
+                $available_slots =
+                    $member_limit -
+                    $current_member_count;
+
+                ?>
+
+
+                <br>
+
+                Available slots:
+
+                <strong>
+
+                    <?php
+                    echo number_format(
+                        max(
+                            0,
+                            $available_slots
+                        )
+                    );
+                    ?>
+
+                </strong>
+
+            </div>
+
+        <?php else: ?>
+
+            <div class="subscription-info">
+
+                <strong>
+                    Current subscription:
+                </strong>
+
+                <?php
+                echo e(
+                    $current_subscription[
+                        "plan_name"
+                    ]
+                );
+                ?>
+
+                <br>
+
+                ✓ Unlimited members
+
+            </div>
+
+        <?php endif; ?>
+
 
         <h2>
             Upload Member Excel File
@@ -1965,6 +2895,18 @@ foreach (
                     <strong>inactive</strong>.
                 </li>
 
+                <?php if ($member_limit !== null): ?>
+
+                    <li>
+
+                        You can import only enough members
+                        to stay within your subscription's
+                        member limit.
+
+                    </li>
+
+                <?php endif; ?>
+
             </ul>
 
         </div>
@@ -1980,39 +2922,113 @@ foreach (
         </a>
 
 
-        <form
-            method="POST"
-            enctype="multipart/form-data"
-        >
+        <?php if (
+            $member_limit === null ||
+            $current_member_count < $member_limit
+        ): ?>
 
-            <input
-                type="file"
-                name="members_file"
-                accept=".xlsx,.xls,.csv"
-                required
+
+            <form
+                method="POST"
+                enctype="multipart/form-data"
             >
 
+                <input
+                    type="file"
+                    name="members_file"
+                    accept=".xlsx,.xls,.csv"
+                    required
+                >
 
-            <div class="note">
 
-                Maximum file size: 10 MB.
+                <div class="note">
+
+                    Maximum file size: 10 MB.
+
+                </div>
+
+
+                <br>
+
+
+                <button
+                    type="submit"
+                    class="button button-blue"
+                >
+
+                    Upload & Preview
+
+                </button>
+
+            </form>
+
+
+        <?php else: ?>
+
+
+            <div class="subscription-warning">
+
+                <strong>
+                    Member limit reached.
+                </strong>
+
+                <br><br>
+
+                Your gym currently has
+
+                <strong>
+                    <?php
+                    echo number_format(
+                        $current_member_count
+                    );
+                    ?>
+                </strong>
+
+                members.
+
+                Your
+
+                <strong>
+                    <?php
+                    echo e(
+                        $current_subscription[
+                            "plan_name"
+                        ]
+                    );
+                    ?>
+                </strong>
+
+                subscription allows a maximum of
+
+                <strong>
+                    <?php
+                    echo number_format(
+                        $member_limit
+                    );
+                    ?>
+                </strong>
+
+                members.
+
+                <br><br>
+
+                Please upgrade your subscription
+                to import additional members.
+
+                <br><br>
+
+                <a
+                    href="my_subscription.php"
+                    class="button button-blue"
+                >
+
+                    View Subscription Plans
+
+                </a>
 
             </div>
 
-
-            <br>
-
-
-            <button
-                type="submit"
-                class="button button-blue"
-            >
-
-                Upload & Preview
-
-            </button>
-
-        </form>
+        <?php endif; ?>
 
     </div>
 

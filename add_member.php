@@ -7,13 +7,39 @@ require_once "backend/check_subscription.php";
 
 /*
 |--------------------------------------------------------------------------
-| Check login
+| ADD MEMBER ERROR MESSAGE
+|--------------------------------------------------------------------------
+*/
+
+$add_member_error = "";
+
+if (isset($_SESSION["add_member_error"])) {
+
+    $add_member_error =
+        $_SESSION["add_member_error"];
+
+    unset(
+        $_SESSION["add_member_error"]
+    );
+
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| CHECK LOGIN
+|--------------------------------------------------------------------------
+|
+| check_subscription.php already checks the owner login,
+| but we keep this check here as an additional safeguard.
+|
 |--------------------------------------------------------------------------
 */
 
 if (!isset($_SESSION["owner_id"])) {
 
     header("Location: login.php");
+
     exit();
 
 }
@@ -38,7 +64,51 @@ if (!isset($_SESSION["owner_id"])) {
         Add Member
     </title>
 
-    <link rel = "stylesheet" href="css/add_member.css">
+
+    <link
+        rel="stylesheet"
+        href="css/add_member.css"
+    >
+
+
+    <style>
+
+        /*
+        |--------------------------------------------------------------------------
+        | SUBSCRIPTION / MEMBER LIMIT ERROR
+        |--------------------------------------------------------------------------
+        */
+
+        .error-message {
+
+            background: #fee2e2;
+
+            color: #991b1b;
+
+            border:
+                1px solid #fecaca;
+
+            padding: 14px 16px;
+
+            border-radius: 8px;
+
+            margin:
+                20px 0;
+
+            line-height: 1.5;
+
+        }
+
+
+        .error-message strong {
+
+            display: block;
+
+            margin-bottom: 4px;
+
+        }
+
+    </style>
 
 </head>
 
@@ -65,6 +135,34 @@ if (!isset($_SESSION["owner_id"])) {
             after creating the member.
 
         </p>
+
+
+        <!--
+        |--------------------------------------------------------------------------
+        | ERROR MESSAGE
+        |--------------------------------------------------------------------------
+        -->
+
+        <?php if ($add_member_error !== ""): ?>
+
+            <div class="error-message">
+
+                <strong>
+                    Unable to Add Member
+                </strong>
+
+                <?php
+
+                echo htmlspecialchars(
+                    $add_member_error
+                );
+
+                ?>
+
+            </div>
+
+        <?php endif; ?>
+
 
 
         <form
