@@ -1,5 +1,10 @@
 <?php
 
+
+date_default_timezone_set("Asia/Karachi");
+
+$today = date("Y-m-d");
+
 /*
 |--------------------------------------------------------------------------
 | OWNER SUBSCRIPTION CHECK
