@@ -283,6 +283,15 @@ $members = $stmt->get_result();
 
             </a>
 
+            <a
+                href="dashboard.php"
+                class="button"
+            >
+
+               ← Back to Dashboard
+
+            </a>
+
         </div>
 
     </div>
@@ -928,17 +937,6 @@ $members = $stmt->get_result();
 
 
     <br>
-
-
-    <a
-        href="dashboard.php"
-        class="button"
-    >
-
-        ← Back to Dashboard
-
-    </a>
-
 
 </div>
 
