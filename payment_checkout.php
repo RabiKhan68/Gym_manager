@@ -1804,29 +1804,31 @@ if (
 |--------------------------------------------------------------------------
 | JAZZCASH / RAAST QR IMAGE
 |--------------------------------------------------------------------------
+|
+| Each subscription plan has its own JazzCash / Raast
+| dynamic QR image.
+|
+| IMPORTANT:
+| Change the IDs below to match your actual
+| subscription_plan_id values in the database.
+|
+|--------------------------------------------------------------------------
 */
 
-$qr_image = "";
+$qr_images = [
 
-$plan_name = strtolower(
-    trim($selected_plan["plan_name"])
-);
+    // Basic
+    2 => "images/basic-qr.png",
 
-if (strpos($plan_name, "basic") !== false) {
+    // Standard
+    3 => "images/pro-qr.jfif",
 
-    $qr_image = "images/basic-qr.png";
+    // Premium
+    4 => "images/ultra-qr.jfif"
 
-}
-elseif (strpos($plan_name, "standard") !== false) {
+];
 
-    $qr_image = "images/pro-qr.jfif";
-
-}
-elseif (strpos($plan_name, "premium") !== false) {
-
-    $qr_image = "images/ultra-qr.jfif";
-
-}
+$qr_image = $qr_images[$plan_id] ?? "";
 
 /*
 |--------------------------------------------------------------------------
@@ -2808,45 +2810,48 @@ elseif (
 
 
                 <?php if (
-                    file_exists($qr_image)
-                ): ?>
+    $qr_image !== "" &&
+    file_exists($qr_image)
+): ?>
 
+    <img
+        src="<?php echo e($qr_image); ?>"
+        alt="<?php echo e(
+            $selected_plan["plan_name"]
+        ); ?> JazzCash / Raast QR"
+        class="qr"
+    >
 
-                    <img
-                        src="<?php
-                        echo e($qr_image);
-                        ?>"
-                        alt="JazzCash Raast Merchant QR"
-                        class="qr"
-                    >
+    <?php else: ?>
 
+        <div class="qr-placeholder">
 
-                <?php else: ?>
+            <div>
 
+                <strong>
+                    QR Code Not Available
+                </strong>
 
-                    <div class="qr-placeholder">
+                <br><br>
 
-                        <div>
+                The JazzCash / Raast QR code
+                for the
 
-                            Your JazzCash / Raast
-                            merchant QR will appear here.
+                <strong>
+                    <?php
+                    echo e(
+                        $selected_plan["plan_name"]
+                    );
+                    ?>
+                </strong>
 
-                            <br><br>
+                plan has not been configured yet.
 
-                            Place your QR image at:
+            </div>
 
-                            <br><br>
+        </div>
 
-                            <strong>
-                                images/jazzcash-raast-qr.png
-                            </strong>
-
-                        </div>
-
-                    </div>
-
-
-                <?php endif; ?>
+<?php endif; ?>
 
 
 
