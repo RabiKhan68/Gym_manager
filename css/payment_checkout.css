@@ -286,9 +286,9 @@ body {
        Desktop QR size.
     */
 
-    width: 360px;
+    width: 420px;
 
-    height: 360px;
+    height: 420px;
 
     /*
        Never exceed available screen width.
@@ -871,7 +871,9 @@ input:focus-visible {
     */
 
     .qr {
-        width: min(340px, 100%);
+        width: 100%;
+
+        max-width: 380px;
 
         height: auto;
 
