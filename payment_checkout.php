@@ -1804,17 +1804,29 @@ if (
 |--------------------------------------------------------------------------
 | JAZZCASH / RAAST QR IMAGE
 |--------------------------------------------------------------------------
-|
-| Put your merchant QR image here:
-|
-| images/jazzcash-raast-qr.png
-|
-|--------------------------------------------------------------------------
 */
 
-$qr_image =
-    "images/jazzcash-raast-qr.png";
+$qr_image = "";
 
+$plan_name = strtolower(
+    trim($selected_plan["plan_name"])
+);
+
+if (strpos($plan_name, "basic") !== false) {
+
+    $qr_image = "images/basic-qr.png";
+
+}
+elseif (strpos($plan_name, "standard") !== false) {
+
+    $qr_image = "images/pro-qr.png";
+
+}
+elseif (strpos($plan_name, "premium") !== false) {
+
+    $qr_image = "images/ultra-qr.png";
+
+}
 
 /*
 |--------------------------------------------------------------------------
