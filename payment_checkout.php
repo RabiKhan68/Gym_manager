@@ -1819,12 +1819,12 @@ if (strpos($plan_name, "basic") !== false) {
 }
 elseif (strpos($plan_name, "standard") !== false) {
 
-    $qr_image = "images/pro-qr.png";
+    $qr_image = "images/pro-qr.jfif";
 
 }
 elseif (strpos($plan_name, "premium") !== false) {
 
-    $qr_image = "images/ultra-qr.png";
+    $qr_image = "images/ultra-qr.jfif";
 
 }
 
