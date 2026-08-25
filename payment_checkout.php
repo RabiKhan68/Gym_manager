@@ -1818,7 +1818,7 @@ if (
 $qr_images = [
 
     // Basic
-    2 => "images/basic-qr.png",
+    2 => "images/basic-qr.jpeg",
 
     // Standard
     3 => "images/pro-qr.jfif",
