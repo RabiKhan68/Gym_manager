@@ -2,6 +2,8 @@
 
 session_start();
 
+require_once "backend/check_subscription.php";
+
 
 /*
 |--------------------------------------------------------------------------
