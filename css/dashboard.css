@@ -1,6 +1,7 @@
 /* ==========================================================
    GYM MANAGER — OWNER DASHBOARD
-   Modern SaaS Dashboard UI
+   Modern SaaS Dashboard
+   Fully Responsive
    ========================================================== */
 
 * {
@@ -13,6 +14,7 @@ html {
 
 body {
     margin: 0;
+
     font-family:
         Inter,
         -apple-system,
@@ -22,7 +24,9 @@ body {
         sans-serif;
 
     background: #f5f7fb;
+
     color: #172033;
+
     line-height: 1.5;
 }
 
@@ -33,8 +37,11 @@ body {
 
 .container {
     width: 100%;
+
     max-width: 1400px;
+
     margin: 0 auto;
+
     padding: 32px;
 }
 
@@ -45,47 +52,56 @@ body {
 
 .header {
     display: flex;
+
     align-items: center;
-    justify-content: space-between;
 
-    gap: 25px;
+    gap: 14px;
 
-    margin-bottom: 30px;
-    padding: 24px 28px;
+    margin-bottom: 28px;
+
+    padding: 24px 26px;
 
     background: #ffffff;
 
-    border: 1px solid #e7ebf2;
+    border:
+        1px solid #e7ebf2;
+
     border-radius: 18px;
 
     box-shadow:
-        0 4px 18px rgba(15, 23, 42, 0.05);
+        0 4px 18px
+        rgba(15, 23, 42, 0.05);
 }
 
 
-/* Header left section */
+/* Header title section */
 
 .header > div:first-child {
     flex: 1;
+
     min-width: 220px;
 }
 
 
 .header h1 {
     display: flex;
+
     align-items: center;
 
     margin: 0;
 
-    font-size: 28px;
-    font-weight: 750;
-
     color: #172033;
+
+    font-size: 28px;
+
+    line-height: 1.25;
+
+    font-weight: 750;
 }
 
 
 .header p {
-    margin: 5px 0 0;
+    margin: 6px 0 0;
 
     color: #6b7280;
 
@@ -97,99 +113,59 @@ body {
    HEADER BUTTONS
    ========================================================== */
 
-/*
-   Documentation and Logout use .logout
-*/
-
-.header .logout {
+.header .logout,
+.header .action,
+.header .button {
     display: inline-flex;
 
     align-items: center;
+
     justify-content: center;
 
     min-height: 42px;
 
-    padding: 10px 16px;
+    padding: 10px 15px;
 
     border-radius: 9px;
 
     text-decoration: none;
 
-    font-size: 14px;
-    font-weight: 650;
+    font-size: 13px;
+
+    font-weight: 700;
 
     white-space: nowrap;
 
     transition:
         background .2s ease,
         color .2s ease,
-        transform .2s ease;
+        transform .2s ease,
+        box-shadow .2s ease;
 }
 
 
 /* Documentation */
 
 .header .logout:first-of-type {
-    color: #374151;
     background: #f3f4f6;
+
+    color: #374151;
 }
 
 
 .header .logout:first-of-type:hover {
     background: #e5e7eb;
+
     transform: translateY(-1px);
 }
 
 
-/* Logout */
-
-.header .logout:last-of-type {
-    color: #dc2626;
-    background: #fef2f2;
-}
-
-
-.header .logout:last-of-type:hover {
-    background: #fee2e2;
-    transform: translateY(-1px);
-}
-
-
-/*
-   IMPORTANT:
-   .action is also used for Quick Action tiles.
-   Therefore header .action gets its own styling.
-*/
+/* My Subscription */
 
 .header .action {
-    display: inline-flex;
-
-    align-items: center;
-    justify-content: center;
-
-    min-height: 42px;
-
-    width: auto;
-
-    padding: 10px 17px;
-
     background: #2563eb;
 
-    color: white;
-
-    text-decoration: none;
-
-    border-radius: 9px;
-
-    font-size: 14px;
-    font-weight: 650;
-
-    white-space: nowrap;
-
-    transition:
-        background .2s ease,
-        transform .2s ease,
-        box-shadow .2s ease;
+    color: #ffffff;
 }
 
 
@@ -199,38 +175,33 @@ body {
     transform: translateY(-1px);
 
     box-shadow:
-        0 5px 12px rgba(37, 99, 235, 0.22);
+        0 5px 14px
+        rgba(37, 99, 235, 0.20);
+}
+
+
+/* Logout */
+
+.header .logout:last-of-type {
+    background: #fef2f2;
+
+    color: #dc2626;
+}
+
+
+.header .logout:last-of-type:hover {
+    background: #fee2e2;
+
+    transform: translateY(-1px);
 }
 
 
 /* Import Members */
 
 .header .button {
-    display: inline-flex;
-
-    align-items: center;
-    justify-content: center;
-
-    min-height: 42px;
-
-    padding: 10px 17px;
-
     background: #111827;
 
-    color: white;
-
-    text-decoration: none;
-
-    border-radius: 9px;
-
-    font-size: 14px;
-    font-weight: 650;
-
-    white-space: nowrap;
-
-    transition:
-        background .2s ease,
-        transform .2s ease;
+    color: #ffffff;
 }
 
 
@@ -262,7 +233,9 @@ body {
 
     background: #ffffff;
 
-    padding: 23px;
+    padding: 22px;
+
+    min-height: 130px;
 
     border:
         1px solid #e7ebf2;
@@ -270,7 +243,8 @@ body {
     border-radius: 16px;
 
     box-shadow:
-        0 4px 16px rgba(15, 23, 42, 0.045);
+        0 4px 16px
+        rgba(15, 23, 42, 0.045);
 
     transition:
         transform .2s ease,
@@ -282,7 +256,8 @@ body {
     transform: translateY(-3px);
 
     box-shadow:
-        0 8px 25px rgba(15, 23, 42, 0.08);
+        0 8px 25px
+        rgba(15, 23, 42, 0.08);
 }
 
 
@@ -291,34 +266,31 @@ body {
 
     align-items: center;
 
+    margin-bottom: 13px;
+
     color: #6b7280;
 
-    font-size: 14px;
-    font-weight: 600;
+    font-size: 13px;
 
-    margin-bottom: 12px;
+    font-weight: 650;
 }
 
 
 .stat-number {
+    color: #172033;
+
     font-size: 32px;
 
     line-height: 1;
 
     font-weight: 750;
-
-    color: #172033;
 }
 
-
-/* Paid */
 
 .stat-number.paid {
     color: #16a34a;
 }
 
-
-/* Unpaid */
 
 .stat-number.unpaid {
     color: #dc2626;
@@ -330,9 +302,11 @@ body {
    ========================================================== */
 
 .card {
-    background: #ffffff;
+    margin-bottom: 24px;
 
     padding: 26px;
+
+    background: #ffffff;
 
     border:
         1px solid #e7ebf2;
@@ -340,9 +314,8 @@ body {
     border-radius: 16px;
 
     box-shadow:
-        0 4px 16px rgba(15, 23, 42, 0.045);
-
-    margin-bottom: 24px;
+        0 4px 16px
+        rgba(15, 23, 42, 0.045);
 }
 
 
@@ -351,26 +324,35 @@ body {
 
     align-items: center;
 
-    margin: 0 0 8px;
+    gap: 0;
+
+    margin:
+        0 0 8px;
+
+    color: #172033;
 
     font-size: 20px;
 
-    font-weight: 700;
+    line-height: 1.3;
 
-    color: #172033;
+    font-weight: 700;
 }
 
 
 /* ==========================================================
-   REVENUE CARD
+   REVENUE
    ========================================================== */
 
 .card > .stat-number {
-    margin-top: 14px;
+    margin-top: 15px;
+
+    color: #172033;
 
     font-size: 38px;
 
-    color: #172033;
+    line-height: 1.1;
+
+    font-weight: 750;
 }
 
 
@@ -382,7 +364,7 @@ body {
     display: grid;
 
     grid-template-columns:
-        repeat(5, minmax(130px, 1fr));
+        repeat(5, minmax(0, 1fr));
 
     gap: 14px;
 
@@ -390,13 +372,9 @@ body {
 }
 
 
-/*
-   IMPORTANT:
-   Only action links INSIDE .actions become tiles.
-*/
-
 .actions .action {
     width: 100%;
+
     min-height: 125px;
 
     padding: 18px 12px;
@@ -406,9 +384,10 @@ body {
     flex-direction: column;
 
     align-items: center;
+
     justify-content: center;
 
-    gap: 7px;
+    gap: 6px;
 
     background: #f8fafc;
 
@@ -424,6 +403,7 @@ body {
     text-align: center;
 
     font-size: 14px;
+
     font-weight: 650;
 
     transition:
@@ -442,7 +422,8 @@ body {
     transform: translateY(-3px);
 
     box-shadow:
-        0 7px 18px rgba(37, 99, 235, 0.08);
+        0 7px 18px
+        rgba(37, 99, 235, 0.08);
 }
 
 
@@ -462,17 +443,17 @@ body {
 
 
 /* ==========================================================
-   TABLES
+   TABLE
    ========================================================== */
 
 table {
     width: 100%;
 
+    margin-top: 18px;
+
     border-collapse: separate;
 
     border-spacing: 0;
-
-    margin-top: 18px;
 
     overflow: hidden;
 }
@@ -480,7 +461,7 @@ table {
 
 th,
 td {
-    padding: 14px 13px;
+    padding: 13px 12px;
 
     text-align: left;
 
@@ -496,13 +477,13 @@ th {
 
     color: #64748b;
 
-    font-size: 12px;
+    font-size: 11px;
 
-    font-weight: 700;
+    font-weight: 750;
 
     text-transform: uppercase;
 
-    letter-spacing: .03em;
+    letter-spacing: .04em;
 }
 
 
@@ -583,13 +564,14 @@ td a:hover {
     display: inline-flex;
 
     align-items: center;
+
     justify-content: center;
 
     padding: 7px 11px;
 
     background: #25d366;
 
-    color: white;
+    color: #ffffff;
 
     text-decoration: none;
 
@@ -613,7 +595,7 @@ td a:hover {
 
 
 /* ==========================================================
-   EMPTY STATES
+   EMPTY STATE
    ========================================================== */
 
 .empty {
@@ -626,6 +608,8 @@ td a:hover {
     gap: 8px;
 
     min-height: 100px;
+
+    margin: 0;
 
     color: #6b7280;
 
@@ -641,6 +625,7 @@ td a:hover {
 
 .icon {
     width: 32px;
+
     height: 32px;
 
     object-fit: contain;
@@ -653,6 +638,7 @@ td a:hover {
 
 .gym-icon {
     width: 58px;
+
     height: 58px;
 
     object-fit: contain;
@@ -667,6 +653,7 @@ td a:hover {
 
 .stat-icon {
     width: 28px;
+
     height: 28px;
 
     object-fit: contain;
@@ -681,6 +668,7 @@ td a:hover {
 
 .revenue-icon {
     width: 38px;
+
     height: 38px;
 
     object-fit: contain;
@@ -695,21 +683,26 @@ td a:hover {
 
 .actions .stat-icon {
     width: 35px;
+
     height: 35px;
 
-    margin: 0 0 5px;
+    margin:
+        0 0 5px;
 }
 
 
-/* Action heading icon */
+/* Quick Actions heading icon */
 
 .action-icon {
     width: 38px;
+
     height: 38px;
 
     object-fit: contain;
 
     margin-right: 8px;
+
+    flex-shrink: 0;
 }
 
 
@@ -717,6 +710,7 @@ td a:hover {
 
 .card h2 img {
     width: 34px;
+
     height: 34px;
 
     object-fit: contain;
@@ -731,6 +725,7 @@ td a:hover {
 
 .empty img {
     width: 42px;
+
     height: 42px;
 
     object-fit: contain;
@@ -740,19 +735,21 @@ td a:hover {
 
 
 /* ==========================================================
-   SUBTLE FOCUS STATES
+   FOCUS STATES
    ========================================================== */
 
 a:focus-visible,
 button:focus-visible {
-    outline: 3px solid rgba(37, 99, 235, 0.25);
+    outline:
+        3px solid
+        rgba(37, 99, 235, 0.25);
 
     outline-offset: 2px;
 }
 
 
 /* ==========================================================
-   LARGE LAPTOP / TABLET
+   LARGE TABLET / SMALL LAPTOP
    ========================================================== */
 
 @media (max-width: 1150px) {
@@ -761,14 +758,17 @@ button:focus-visible {
         padding: 24px;
     }
 
+
     .header {
         flex-wrap: wrap;
     }
+
 
     .stats {
         grid-template-columns:
             repeat(2, minmax(0, 1fr));
     }
+
 
     .actions {
         grid-template-columns:
@@ -784,184 +784,124 @@ button:focus-visible {
 
 @media (max-width: 850px) {
 
-    .container {
-        padding: 20px;
-    }
-
-    /* Header */
-
     .header {
         align-items: flex-start;
-        flex-wrap: wrap;
-        gap: 12px;
+
+        gap: 10px;
     }
+
 
     .header > div:first-child {
         width: 100%;
+
         flex-basis: 100%;
     }
 
-    .header h1 {
-        font-size: 25px;
-    }
 
     .header .logout,
     .header .action,
     .header .button {
         flex: 1;
-        min-width: 140px;
+
+        min-width: 0;
     }
 
-
-    /* Two-column sections become single-column */
 
     .two-column {
         grid-template-columns: 1fr;
     }
 
 
-    /* Quick actions */
-
-    .actions {
-        grid-template-columns:
-            repeat(3, minmax(0, 1fr));
-
-        gap: 12px;
+    .card {
+        padding: 22px;
     }
 
 }
 
 
 /* ==========================================================
-   MOBILE — 600px AND BELOW
+   MOBILE
    ========================================================== */
 
 @media (max-width: 600px) {
 
-    body {
-        overflow-x: hidden;
-    }
-
-
-    /* ======================================================
-       CONTAINER
-       ====================================================== */
-
     .container {
-        width: 100%;
-        max-width: 100%;
-
         padding: 12px;
     }
 
 
-    /* ======================================================
-       HEADER
-       ====================================================== */
+    /* Header */
 
     .header {
-        width: 100%;
-
-        display: flex;
-        flex-direction: column;
-
-        align-items: stretch;
-
-        gap: 10px;
-
-        margin-bottom: 16px;
-
         padding: 18px;
 
+        margin-bottom: 18px;
+
         border-radius: 14px;
-    }
 
-
-    .header > div:first-child {
-        width: 100%;
-
-        flex-basis: auto;
-
-        margin-bottom: 5px;
+        gap: 9px;
     }
 
 
     .header h1 {
-        display: flex;
-
-        align-items: center;
-
         font-size: 22px;
 
-        line-height: 1.25;
-
-        word-break: break-word;
+        line-height: 1.3;
     }
 
 
     .header p {
-        margin-top: 6px;
-
-        font-size: 13px;
+        font-size: 12px;
     }
 
 
     .gym-icon {
         width: 44px;
+
         height: 44px;
 
-        margin-right: 8px;
+        margin-right: 7px;
     }
 
-
-    /*
-       All header buttons become full-width.
-    */
 
     .header .logout,
     .header .action,
     .header .button {
-
         width: 100%;
-
-        min-width: 0;
-
-        min-height: 44px;
 
         flex: none;
 
-        padding: 11px 14px;
+        min-height: 44px;
 
-        font-size: 14px;
+        padding:
+            10px 12px;
+
+        font-size: 13px;
     }
 
 
-    /* ======================================================
-       STATISTICS
-       ====================================================== */
+    /* Statistics */
 
     .stats {
-        width: 100%;
-
         grid-template-columns: 1fr;
 
-        gap: 10px;
+        gap: 12px;
 
-        margin-bottom: 16px;
+        margin-bottom: 18px;
     }
 
 
     .stat-card {
-        width: 100%;
+        min-height: 105px;
 
-        padding: 18px;
+        padding: 19px;
 
         border-radius: 13px;
     }
 
 
     .stat-title {
-        font-size: 13px;
+        font-size: 12px;
 
         margin-bottom: 10px;
     }
@@ -974,74 +914,57 @@ button:focus-visible {
 
     .stat-icon {
         width: 25px;
+
         height: 25px;
 
         margin-right: 7px;
     }
 
 
-    /* ======================================================
-       GENERAL CARDS
-       ====================================================== */
+    /* Cards */
 
     .card {
-        width: 100%;
+        padding: 19px;
 
-        padding: 18px;
-
-        margin-bottom: 16px;
+        margin-bottom: 18px;
 
         border-radius: 13px;
     }
 
 
     .card h2 {
-        font-size: 18px;
-
-        line-height: 1.3;
-
-        margin-bottom: 6px;
+        font-size: 17px;
     }
 
 
     .card h2 img {
         width: 30px;
+
         height: 30px;
 
         margin-right: 7px;
     }
 
 
-    /* ======================================================
-       REVENUE
-       ====================================================== */
+    /* Revenue */
 
     .card > .stat-number {
-        font-size: 31px;
+        font-size: 30px;
 
         margin-top: 12px;
-
-        word-break: break-word;
     }
 
 
     .revenue-icon {
         width: 32px;
-        height: 32px;
 
-        margin-right: 6px;
+        height: 32px;
     }
 
 
-    /* ======================================================
-       QUICK ACTIONS
-       ====================================================== */
+    /* Quick Actions */
 
     .actions {
-        width: 100%;
-
-        display: grid;
-
         grid-template-columns:
             repeat(2, minmax(0, 1fr));
 
@@ -1052,67 +975,40 @@ button:focus-visible {
 
 
     .actions .action {
-
-        width: 100%;
-
-        min-width: 0;
-
         min-height: 105px;
 
-        padding: 13px 8px;
+        padding:
+            14px 8px;
 
         border-radius: 11px;
 
-        font-size: 13px;
-
-        line-height: 1.25;
+        font-size: 12px;
     }
 
 
     .actions .stat-icon {
         width: 31px;
-        height: 31px;
 
-        margin: 0 0 5px;
+        height: 31px;
     }
 
 
-    /* ======================================================
-       TWO COLUMN
-       ====================================================== */
+    /* Two columns */
 
     .two-column {
-        width: 100%;
-
-        display: grid;
-
-        grid-template-columns: 1fr;
-
         gap: 0;
     }
 
 
-    /* ======================================================
-       TABLE CONTAINER
-       ====================================================== */
+    /* Tables */
 
-    .table-container {
-        width: 100%;
-
-        max-width: 100%;
-
-        overflow-x: auto;
-
-        -webkit-overflow-scrolling: touch;
-
-        border-radius: 8px;
+    .card:has(table) {
+        overflow: hidden;
     }
 
 
     table {
-        width: 100%;
-
-        min-width: 520px;
+        min-width: 480px;
 
         margin-top: 14px;
     }
@@ -1120,11 +1016,10 @@ button:focus-visible {
 
     th,
     td {
-        padding: 10px 9px;
+        padding:
+            10px 9px;
 
         font-size: 12px;
-
-        white-space: nowrap;
     }
 
 
@@ -1133,59 +1028,48 @@ button:focus-visible {
     }
 
 
-    /* ======================================================
-       EMPTY STATE
-       ====================================================== */
+    /* Make table scroll horizontally */
+
+    .card table {
+        display: block;
+
+        overflow-x: auto;
+
+        white-space: nowrap;
+    }
+
+
+    /* Empty state */
 
     .empty {
-        min-height: 90px;
+        min-height: 80px;
 
-        padding: 15px;
-
-        font-size: 13px;
-
-        flex-direction: column;
-
-        text-align: center;
+        font-size: 12px;
     }
 
 
     .empty img {
-        width: 38px;
-        height: 38px;
+        width: 35px;
 
-        margin: 0 0 5px;
-    }
-
-
-    /* ======================================================
-       WHATSAPP BUTTON
-       ====================================================== */
-
-    .whatsapp {
-        padding: 6px 9px;
-
-        font-size: 11px;
+        height: 35px;
     }
 
 }
 
 
 /* ==========================================================
-   SMALL PHONES — 480px AND BELOW
+   SMALL PHONES
    ========================================================== */
 
-@media (max-width: 480px) {
+@media (max-width: 400px) {
 
     .container {
-        padding: 10px;
+        padding: 8px;
     }
 
 
-    /* Header */
-
     .header {
-        padding: 16px;
+        padding: 15px;
 
         border-radius: 12px;
     }
@@ -1197,13 +1081,16 @@ button:focus-visible {
 
 
     .header p {
-        font-size: 12px;
+        font-size: 11px;
     }
 
 
     .gym-icon {
-        width: 40px;
-        height: 40px;
+        width: 39px;
+
+        height: 39px;
+
+        margin-right: 6px;
     }
 
 
@@ -1212,13 +1099,9 @@ button:focus-visible {
     .header .button {
         min-height: 42px;
 
-        font-size: 13px;
-
-        padding: 10px 12px;
+        font-size: 12px;
     }
 
-
-    /* Stats */
 
     .stat-card {
         padding: 16px;
@@ -1230,8 +1113,6 @@ button:focus-visible {
     }
 
 
-    /* Cards */
-
     .card {
         padding: 16px;
 
@@ -1240,61 +1121,67 @@ button:focus-visible {
 
 
     .card h2 {
-        font-size: 17px;
+        font-size: 16px;
     }
 
-
-    /* Revenue */
-
-    .card > .stat-number {
-        font-size: 28px;
-    }
-
-
-    /* Quick actions */
 
     .actions {
-        gap: 8px;
+        grid-template-columns: 1fr;
     }
 
 
     .actions .action {
-        min-height: 100px;
+        min-height: 82px;
 
-        padding: 11px 6px;
+        flex-direction: row;
 
-        font-size: 12px;
+        gap: 9px;
     }
 
 
     .actions .stat-icon {
-        width: 28px;
-        height: 28px;
+        width: 29px;
+
+        height: 29px;
+
+        margin: 0;
     }
 
 
-    /* Tables */
+    .card > .stat-number {
+        font-size: 27px;
+    }
+
 
     table {
-        min-width: 500px;
+        min-width: 450px;
+    }
+
+
+    th,
+    td {
+        padding:
+            9px 8px;
+
+        font-size: 11px;
     }
 
 }
 
 
 /* ==========================================================
-   VERY SMALL PHONES — 380px AND BELOW
+   VERY SMALL PHONES
    ========================================================== */
 
-@media (max-width: 380px) {
+@media (max-width: 320px) {
 
     .container {
-        padding: 8px;
+        padding: 6px;
     }
 
 
     .header {
-        padding: 14px;
+        padding: 13px;
     }
 
 
@@ -1304,25 +1191,22 @@ button:focus-visible {
 
 
     .header p {
-        font-size: 11px;
+        font-size: 10px;
     }
 
 
-    .gym-icon {
-        width: 36px;
-        height: 36px;
+    .header .logout,
+    .header .action,
+    .header .button {
+        font-size: 11px;
 
-        margin-right: 6px;
+        padding:
+            9px 8px;
     }
 
 
     .stat-card {
         padding: 14px;
-    }
-
-
-    .stat-title {
-        font-size: 12px;
     }
 
 
@@ -1337,131 +1221,14 @@ button:focus-visible {
 
 
     .card h2 {
-        font-size: 16px;
-    }
-
-
-    .card > .stat-number {
-        font-size: 26px;
-    }
-
-
-    /*
-       Keep two columns for quick actions,
-       but make the tiles compact.
-    */
-
-    .actions {
-        grid-template-columns:
-            repeat(2, minmax(0, 1fr));
-
-        gap: 7px;
-    }
-
-
-    .actions .action {
-        min-height: 92px;
-
-        padding: 9px 5px;
-
-        font-size: 11px;
-    }
-
-
-    .actions .stat-icon {
-        width: 25px;
-        height: 25px;
-    }
-
-
-    table {
-        min-width: 480px;
-    }
-
-
-    th,
-    td {
-        padding: 9px 8px;
-
-        font-size: 11px;
-    }
-
-}
-
-
-/* ==========================================================
-   EXTRA SMALL — 320px AND BELOW
-   ========================================================== */
-
-@media (max-width: 320px) {
-
-    .container {
-        padding: 6px;
-    }
-
-
-    .header {
-        padding: 12px;
-    }
-
-
-    .header h1 {
-        font-size: 17px;
-    }
-
-
-    .header .logout,
-    .header .action,
-    .header .button {
-        font-size: 12px;
-
-        min-height: 40px;
-    }
-
-
-    .stat-card {
-        padding: 12px;
-    }
-
-
-    .stat-number {
-        font-size: 23px;
-    }
-
-
-    .card {
-        padding: 12px;
-    }
-
-
-    /*
-       At extremely narrow widths,
-       one action per row prevents cramped buttons.
-    */
-
-    .actions {
-        grid-template-columns: 1fr;
+        font-size: 15px;
     }
 
 
     .actions .action {
         min-height: 75px;
 
-        flex-direction: row;
-
-        gap: 8px;
-
-        justify-content: flex-start;
-
-        padding: 12px;
-    }
-
-
-    .actions .stat-icon {
-        width: 27px;
-        height: 27px;
-
-        margin: 0;
+        font-size: 11px;
     }
 
 }

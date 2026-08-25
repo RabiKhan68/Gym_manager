@@ -1,273 +1,1087 @@
 /* ==========================================================
-   Members Page - Styles
+   GYMMANAGER — MEMBERS PAGE
+   Modern SaaS UI
+   Fully Responsive
    ========================================================== */
 
 * {
     box-sizing: border-box;
 }
 
-body {
-    margin: 0;
-    padding: 30px;
-    font-family: Arial, sans-serif;
-    background: #f4f6f8;
-    color: #222;
+html {
+    scroll-behavior: smooth;
 }
 
-.container {
-    max-width: 1300px;
-    margin: auto;
+body {
+    margin: 0;
+
+    font-family:
+        Inter,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        Arial,
+        sans-serif;
+
+    background: #f5f7fb;
+
+    color: #172033;
+
+    line-height: 1.5;
 }
+
+
+/* ==========================================================
+   MAIN CONTAINER
+   ========================================================== */
+
+.container {
+    width: 100%;
+
+    max-width: 1450px;
+
+    margin: 0 auto;
+
+    padding: 32px;
+}
+
+
+/* ==========================================================
+   HEADER
+   ========================================================== */
 
 .header {
     display: flex;
-    justify-content: space-between;
+
     align-items: center;
-    margin-bottom: 25px;
-    flex-wrap: wrap;
-    gap: 15px;
+
+    justify-content: space-between;
+
+    gap: 25px;
+
+    margin-bottom: 22px;
+
+    padding: 24px 28px;
+
+    background: #ffffff;
+
+    border:
+        1px solid #e7ebf2;
+
+    border-radius: 18px;
+
+    box-shadow:
+        0 4px 18px
+        rgba(15, 23, 42, 0.05);
 }
+
+
+.header > div:first-child {
+    min-width: 0;
+
+    flex: 1;
+}
+
 
 .header h1 {
     margin: 0;
+
+    color: #172033;
+
+    font-size: 28px;
+
+    font-weight: 750;
+
+    line-height: 1.25;
+
+    overflow-wrap: anywhere;
 }
+
+
+.header p {
+    margin: 5px 0 0;
+
+    color: #6b7280;
+
+    font-size: 14px;
+
+    font-weight: 500;
+}
+
+
+/* ==========================================================
+   HEADER ACTIONS
+   ========================================================== */
 
 .actions {
     display: flex;
-    gap: 10px;
+
+    align-items: center;
+
     flex-wrap: wrap;
+
+    gap: 10px;
+
+    flex-shrink: 0;
 }
+
 
 .button {
-    display: inline-block;
+    display: inline-flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    min-height: 42px;
+
     padding: 10px 16px;
-    border-radius: 7px;
+
+    background: #2563eb;
+
+    color: #ffffff;
+
     text-decoration: none;
-    background: #111827;
-    color: white;
+
+    border-radius: 9px;
+
+    font-size: 14px;
+
+    font-weight: 650;
+
+    white-space: nowrap;
+
+    transition:
+        background .2s ease,
+        transform .2s ease,
+        box-shadow .2s ease;
 }
+
 
 .button:hover {
-    opacity: 0.9;
+    background: #1d4ed8;
+
+    color: #ffffff;
+
+    transform: translateY(-1px);
+
+    box-shadow:
+        0 5px 12px
+        rgba(37, 99, 235, 0.18);
 }
 
+
+/* ==========================================================
+   SEARCH BOX
+   ========================================================== */
+
 .search-box {
-    background: white;
-    padding: 20px;
-    border-radius: 10px;
     margin-bottom: 20px;
-    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.06);
+
+    padding: 18px 20px;
+
+    background: #ffffff;
+
+    border:
+        1px solid #e7ebf2;
+
+    border-radius: 14px;
+
+    box-shadow:
+        0 3px 12px
+        rgba(15, 23, 42, 0.04);
 }
+
 
 .search-box form {
     display: flex;
+
+    align-items: center;
+
     gap: 10px;
-    flex-wrap: wrap;
+
+    width: 100%;
 }
+
 
 .search-box input {
-    padding: 10px;
-    width: 300px;
-    max-width: 100%;
-    border: 1px solid #ccc;
-    border-radius: 6px;
+    flex: 1;
+
+    min-width: 0;
+
+    height: 43px;
+
+    padding: 10px 13px;
+
+    background: #ffffff;
+
+    color: #172033;
+
+    border:
+        1px solid #d9dee8;
+
+    border-radius: 8px;
+
+    outline: none;
+
+    font-family: inherit;
+
+    font-size: 14px;
+
+    transition:
+        border-color .2s ease,
+        box-shadow .2s ease;
 }
 
-.search-box button {
-    padding: 10px 16px;
-    border: none;
-    border-radius: 6px;
-    background: #2563eb;
-    color: white;
-    cursor: pointer;
+
+.search-box input::placeholder {
+    color: #9ca3af;
 }
+
+
+.search-box input:focus {
+    border-color: #2563eb;
+
+    box-shadow:
+        0 0 0 3px
+        rgba(37, 99, 235, 0.10);
+}
+
+
+.search-box button {
+    height: 43px;
+
+    padding: 0 18px;
+
+    background: #111827;
+
+    color: #ffffff;
+
+    border: none;
+
+    border-radius: 8px;
+
+    cursor: pointer;
+
+    font-family: inherit;
+
+    font-size: 14px;
+
+    font-weight: 650;
+
+    transition:
+        background .2s ease,
+        transform .2s ease;
+}
+
+
+.search-box button:hover {
+    background: #1f2937;
+
+    transform: translateY(-1px);
+}
+
 
 .clear {
     display: inline-flex;
+
     align-items: center;
-    padding: 10px 15px;
+
+    justify-content: center;
+
+    height: 43px;
+
+    padding: 0 14px;
+
+    background: #f3f4f6;
+
+    color: #374151;
+
     text-decoration: none;
-    color: #555;
+
+    border-radius: 8px;
+
+    font-size: 13px;
+
+    font-weight: 650;
+
+    white-space: nowrap;
+
+    transition:
+        background .2s ease;
 }
 
-.table-container {
-    background: white;
-    border-radius: 10px;
-    overflow-x: auto;
-    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.06);
+
+.clear:hover {
+    background: #e5e7eb;
+
+    color: #111827;
 }
+
+
+/* ==========================================================
+   TABLE CONTAINER
+   ========================================================== */
+
+.table-container {
+    width: 100%;
+
+    overflow-x: auto;
+
+    -webkit-overflow-scrolling: touch;
+
+    background: #ffffff;
+
+    border:
+        1px solid #e7ebf2;
+
+    border-radius: 16px;
+
+    box-shadow:
+        0 4px 16px
+        rgba(15, 23, 42, 0.045);
+}
+
+
+/* ==========================================================
+   TABLE
+   ========================================================== */
 
 table {
     width: 100%;
-    border-collapse: collapse;
-    min-width: 950px;
+
+    min-width: 1100px;
+
+    border-collapse: separate;
+
+    border-spacing: 0;
 }
 
-th,
-td {
-    padding: 14px;
+
+thead th {
+    padding: 15px 13px;
+
+    background: #f8fafc;
+
+    color: #64748b;
+
+    border-bottom:
+        1px solid #e5e7eb;
+
+    font-size: 11px;
+
+    font-weight: 750;
+
     text-align: left;
-    border-bottom: 1px solid #eee;
+
+    text-transform: uppercase;
+
+    letter-spacing: .04em;
+
+    white-space: nowrap;
 }
 
-th {
+
+thead th:first-child {
+    border-top-left-radius: 16px;
+}
+
+
+thead th:last-child {
+    border-top-right-radius: 16px;
+}
+
+
+tbody td {
+    padding: 15px 13px;
+
+    color: #374151;
+
+    border-bottom:
+        1px solid #edf0f4;
+
+    font-size: 13px;
+
+    vertical-align: middle;
+}
+
+
+tbody tr {
+    transition:
+        background .15s ease;
+}
+
+
+tbody tr:hover {
     background: #f8fafc;
 }
 
-tr:hover {
-    background: #fafafa;
+
+tbody tr:last-child td {
+    border-bottom: none;
 }
 
-.active {
-    color: #16a34a;
-    font-weight: bold;
-}
-
-.inactive {
-    color: #dc2626;
-    font-weight: bold;
-}
-
-.expiry-active {
-    color: #16a34a;
-    font-weight: bold;
-}
-
-.expiry-soon {
-    color: #d97706;
-    font-weight: bold;
-}
-
-.expiry-expired {
-    color: #dc2626;
-    font-weight: bold;
-}
-
-.no-membership {
-    color: #6b7280;
-}
-
-.paid {
-    color: #16a34a;
-    font-weight: bold;
-}
-
-.unpaid {
-    color: #dc2626;
-    font-weight: bold;
-}
-
-.action a {
-    text-decoration: none;
-    margin-right: 8px;
-}
-
-.edit {
-    color: #2563eb;
-}
-
-.details {
-    color: #7c3aed;
-}
-
-.deactivate {
-    color: #dc2626;
-}
-
-.activate {
-    color: #16a34a;
-}
-
-.empty {
-    text-align: center;
-    padding: 40px;
-    color: #777;
-}
 
 /* ==========================================================
-   ICONS
+   MEMBER NAME
    ========================================================== */
 
-.icon {
-    width: 32px;
-    height: 32px;
-    object-fit: contain;
-    vertical-align: middle;
+tbody td strong {
+    color: #172033;
+
+    font-weight: 700;
 }
 
-.gym-icon {
-    width: 70px;
-    height: 70px;
-    object-fit: contain;
-    vertical-align: middle;
-    margin-right: 10px;
+
+tbody td small {
+    color: #64748b;
+
+    font-size: 11px;
+
+    line-height: 1.5;
 }
+
+
+/* ==========================================================
+   MEMBERSHIP
+   ========================================================== */
+
+tbody td .no-membership {
+    display: inline-flex;
+
+    align-items: center;
+
+    padding: 5px 9px;
+
+    background: #f3f4f6;
+
+    color: #6b7280;
+
+    border-radius: 20px;
+
+    font-size: 11px;
+
+    font-weight: 650;
+
+    white-space: nowrap;
+}
+
+
+/* ==========================================================
+   EXPIRY STATUS
+   ========================================================== */
+
+.expiry-active,
+.expiry-soon,
+.expiry-expired {
+    display: inline-flex;
+
+    align-items: center;
+
+    padding: 5px 9px;
+
+    border-radius: 20px;
+
+    font-size: 11px;
+
+    font-weight: 700;
+
+    white-space: nowrap;
+}
+
+
+.expiry-active {
+    background: #dcfce7;
+
+    color: #15803d;
+}
+
+
+.expiry-soon {
+    background: #ffedd5;
+
+    color: #c2410c;
+}
+
+
+.expiry-expired {
+    background: #fee2e2;
+
+    color: #b91c1c;
+}
+
+
+/* ==========================================================
+   PAYMENT STATUS
+   ========================================================== */
+
+.paid,
+.unpaid {
+    display: inline-flex;
+
+    align-items: center;
+
+    gap: 5px;
+
+    padding: 5px 9px;
+
+    border-radius: 20px;
+
+    font-size: 11px;
+
+    font-weight: 700;
+
+    white-space: nowrap;
+}
+
+
+.paid {
+    background: #dcfce7;
+
+    color: #15803d;
+}
+
+
+.unpaid {
+    background: #fee2e2;
+
+    color: #b91c1c;
+}
+
+
+/* ==========================================================
+   MEMBER STATUS
+   ========================================================== */
+
+.active,
+.inactive {
+    display: inline-flex;
+
+    align-items: center;
+
+    padding: 5px 9px;
+
+    border-radius: 20px;
+
+    font-size: 11px;
+
+    font-weight: 700;
+
+    white-space: nowrap;
+}
+
+
+.active {
+    background: #dcfce7;
+
+    color: #15803d;
+}
+
+
+.inactive {
+    background: #fee2e2;
+
+    color: #b91c1c;
+}
+
+
+/* ==========================================================
+   STATUS ICONS
+   ========================================================== */
 
 .stat-icon {
-    width: 32px;
-    height: 32px;
+    width: 19px;
+
+    height: 19px;
+
     object-fit: contain;
+
     vertical-align: middle;
-    margin-right: 8px;
+
+    margin-right: 4px;
+
+    flex-shrink: 0;
 }
 
-.revenue-icon {
-    width: 40px;
-    height: 40px;
-    object-fit: contain;
-    vertical-align: middle;
-    margin-right: 8px;
+
+/* ==========================================================
+   ACTION COLUMN
+   ========================================================== */
+
+td.action {
+    min-width: 210px;
 }
 
-.action-icon {
-    width: 70px;
-    height: 70px;
-    object-fit: contain;
-    display: block;
-    margin: 0 auto 8px;
-}
 
-.action {
-    display: flex;
-    flex-direction: column;
+td.action a {
+    display: inline-flex;
+
     align-items: center;
+
     justify-content: center;
 
-    width: 180px;
-    min-height: 110px;
+    min-height: 32px;
 
-    padding: 12px;
+    margin: 2px 3px 2px 0;
+
+    padding: 6px 10px;
+
+    border-radius: 7px;
+
+    text-decoration: none;
+
+    font-size: 11px;
+
+    font-weight: 650;
+
+    white-space: nowrap;
+
+    transition:
+        background .2s ease,
+        transform .15s ease;
+}
+
+
+td.action a:hover {
+    transform: translateY(-1px);
+}
+
+
+/* Details */
+
+td.action .details {
+    background: #eff6ff;
+
+    color: #1d4ed8;
+}
+
+
+td.action .details:hover {
+    background: #dbeafe;
+}
+
+
+/* Edit */
+
+td.action .edit {
+    background: #f3f4f6;
+
+    color: #374151;
+}
+
+
+td.action .edit:hover {
+    background: #e5e7eb;
+}
+
+
+/* Deactivate */
+
+td.action .deactivate {
+    background: #fef2f2;
+
+    color: #dc2626;
+}
+
+
+td.action .deactivate:hover {
+    background: #fee2e2;
+}
+
+
+/* Activate */
+
+td.action .activate {
+    background: #ecfdf5;
+
+    color: #15803d;
+}
+
+
+td.action .activate:hover {
+    background: #dcfce7;
+}
+
+
+/* ==========================================================
+   EMPTY STATE
+   ========================================================== */
+
+.empty {
+    height: 150px;
+
+    padding: 30px !important;
+
+    color: #6b7280 !important;
+
+    background: #ffffff;
+
+    text-align: center !important;
+
+    vertical-align: middle !important;
+
+    font-size: 14px !important;
+}
+
+
+.empty strong {
+    color: #172033;
+
+    font-weight: 700;
+}
+
+
+/* ==========================================================
+   BACK TO DASHBOARD
+   ========================================================== */
+
+.container > .button {
+    margin-top: 18px;
 
     background: #111827;
-    color: white;
-    text-decoration: none;
-    border-radius: 8px;
-
-    text-align: center;
 }
 
-.card h2 img {
-    width: 40px;
-    height: 40px;
-    object-fit: contain;
-    vertical-align: middle;
-    margin-right: 8px;
+
+.container > .button:hover {
+    background: #1f2937;
 }
 
-.empty img {
-    width: 50px;
-    height: 50px;
-    object-fit: contain;
-    vertical-align: middle;
-    margin-right: 8px;
+
+/* ==========================================================
+   FOCUS STATES
+   ========================================================== */
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible {
+    outline:
+        3px solid
+        rgba(37, 99, 235, 0.25);
+
+    outline-offset: 2px;
 }
 
-/* MOBILE */
+
+/* ==========================================================
+   LARGE TABLET
+   ========================================================== */
+
+@media (max-width: 1100px) {
+
+    .container {
+        padding: 24px;
+    }
+
+
+    .header {
+        flex-wrap: wrap;
+    }
+
+
+    .actions {
+        width: 100%;
+    }
+
+}
+
+
+/* ==========================================================
+   TABLET
+   ========================================================== */
+
+@media (max-width: 800px) {
+
+    .container {
+        padding: 18px;
+    }
+
+
+    .header {
+        padding: 20px;
+
+        gap: 16px;
+
+        border-radius: 15px;
+    }
+
+
+    .header h1 {
+        font-size: 24px;
+    }
+
+
+    .actions {
+        display: grid;
+
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
+
+        width: 100%;
+    }
+
+
+    .actions .button {
+        width: 100%;
+    }
+
+
+    .search-box {
+        padding: 15px;
+    }
+
+
+    .search-box form {
+        flex-wrap: wrap;
+    }
+
+
+    .search-box input {
+        width: 100%;
+
+        flex: 1 1 100%;
+    }
+
+
+    .search-box button,
+    .search-box .clear {
+        flex: 1;
+    }
+
+}
+
+
+/* ==========================================================
+   MOBILE
+   ========================================================== */
 
 @media (max-width: 600px) {
 
-    body {
-        padding: 15px;
+    .container {
+        padding: 12px;
+    }
+
+
+    .header {
+        padding: 18px;
+
+        margin-bottom: 14px;
+
+        border-radius: 14px;
+    }
+
+
+    .header h1 {
+        font-size: 22px;
+    }
+
+
+    .header p {
+        font-size: 13px;
+    }
+
+
+    .actions {
+        grid-template-columns: 1fr;
+
+        gap: 8px;
+    }
+
+
+    .actions .button {
+        min-height: 43px;
+    }
+
+
+    .search-box {
+        padding: 13px;
+
+        border-radius: 12px;
+
+        margin-bottom: 14px;
+    }
+
+
+    .search-box form {
+        display: grid;
+
+        grid-template-columns:
+            minmax(0, 1fr)
+            auto;
+
+        gap: 8px;
+    }
+
+
+    .search-box input {
+        grid-column: 1 / -1;
+
+        width: 100%;
+
+        height: 44px;
+    }
+
+
+    .search-box button {
+        width: 100%;
+
+        height: 42px;
+    }
+
+
+    .search-box .clear {
+        width: 100%;
+
+        height: 42px;
+    }
+
+
+    .table-container {
+        border-radius: 13px;
+
+        /*
+           Keep the table wide enough to remain readable.
+           User can swipe horizontally.
+        */
+
+        overflow-x: auto;
+    }
+
+
+    table {
+        min-width: 1050px;
+    }
+
+
+    thead th {
+        padding: 12px 10px;
+
+        font-size: 10px;
+    }
+
+
+    tbody td {
+        padding: 12px 10px;
+
+        font-size: 12px;
+    }
+
+
+    td.action {
+        min-width: 200px;
+    }
+
+
+    td.action a {
+        min-height: 31px;
+
+        padding: 6px 9px;
+
+        font-size: 10px;
+    }
+
+
+    .stat-icon {
+        width: 17px;
+
+        height: 17px;
+    }
+
+
+    .container > .button {
+        width: 100%;
+
+        min-height: 44px;
+
+        margin-top: 14px;
+    }
+
+}
+
+
+/* ==========================================================
+   SMALL PHONES
+   ========================================================== */
+
+@media (max-width: 400px) {
+
+    .container {
+        padding: 9px;
+    }
+
+
+    .header {
+        padding: 16px;
+
+        border-radius: 12px;
+    }
+
+
+    .header h1 {
+        font-size: 20px;
+    }
+
+
+    .header p {
+        font-size: 12px;
+    }
+
+
+    .search-box {
+        padding: 11px;
+
+        border-radius: 11px;
+    }
+
+
+    .search-box form {
+        grid-template-columns: 1fr;
+    }
+
+
+    .search-box input,
+    .search-box button,
+    .search-box .clear {
+        grid-column: auto;
+
+        width: 100%;
+    }
+
+
+    .table-container {
+        border-radius: 11px;
+    }
+
+
+    table {
+        min-width: 1020px;
+    }
+
+}
+
+
+/* ==========================================================
+   VERY SMALL PHONES
+   ========================================================== */
+
+@media (max-width: 320px) {
+
+    .container {
+        padding: 7px;
+    }
+
+
+    .header {
+        padding: 14px;
+    }
+
+
+    .header h1 {
+        font-size: 19px;
+    }
+
+
+    .actions .button {
+        font-size: 13px;
     }
 
 }

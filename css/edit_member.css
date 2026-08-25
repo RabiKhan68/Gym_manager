@@ -1,98 +1,643 @@
 /* ==========================================================
-   Edit Member Page - Styles
+   GYM MANAGER — EDIT MEMBER
+   Modern SaaS Form UI
+   Fully Responsive
    ========================================================== */
 
 * {
     box-sizing: border-box;
 }
 
+html {
+    scroll-behavior: smooth;
+}
+
 body {
     margin: 0;
-    font-family: Arial, sans-serif;
-    background: #f4f6f8;
-    color: #222;
+
+    min-height: 100vh;
+
+    font-family:
+        Inter,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        Arial,
+        sans-serif;
+
+    background: #f5f7fb;
+
+    color: #172033;
+
+    line-height: 1.5;
 }
+
+
+/* ==========================================================
+   MAIN CONTAINER
+   ========================================================== */
 
 .container {
+    width: 100%;
+
     max-width: 650px;
-    margin: 40px auto;
-    padding: 20px;
+
+    margin: 0 auto;
+
+    padding: 40px 24px;
 }
+
+
+/* ==========================================================
+   CARD
+   ========================================================== */
 
 .card {
-    background: white;
-    padding: 30px;
-    border-radius: 12px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+    background: #ffffff;
+
+    padding: 32px;
+
+    border:
+        1px solid #e7ebf2;
+
+    border-radius: 18px;
+
+    box-shadow:
+        0 8px 30px
+        rgba(15, 23, 42, 0.06);
 }
 
-h1 {
-    margin-top: 0;
-    margin-bottom: 25px;
+
+/* ==========================================================
+   HEADING
+   ========================================================== */
+
+.card h1 {
+    margin: 0 0 24px;
+
+    color: #172033;
+
+    font-size: 27px;
+
+    line-height: 1.3;
+
+    font-weight: 750;
 }
+
+
+/* ==========================================================
+   STATUS
+   ========================================================== */
+
+.status {
+    display: flex;
+
+    align-items: center;
+
+    flex-wrap: wrap;
+
+    gap: 8px;
+
+    margin-bottom: 25px;
+
+    padding: 14px 16px;
+
+    background: #f8fafc;
+
+    border:
+        1px solid #e5e7eb;
+
+    border-radius: 10px;
+
+    color: #374151;
+
+    font-size: 14px;
+}
+
+
+/* Active status */
+
+.active {
+    display: inline-flex;
+
+    align-items: center;
+
+    padding: 5px 10px;
+
+    background: #dcfce7;
+
+    color: #166534;
+
+    border-radius: 20px;
+
+    font-size: 13px;
+
+    font-weight: 700;
+}
+
+
+/* Inactive status */
+
+.inactive {
+    display: inline-flex;
+
+    align-items: center;
+
+    padding: 5px 10px;
+
+    background: #fee2e2;
+
+    color: #991b1b;
+
+    border-radius: 20px;
+
+    font-size: 13px;
+
+    font-weight: 700;
+}
+
+
+/* ==========================================================
+   FORM
+   ========================================================== */
+
+form {
+    width: 100%;
+}
+
+
+/* ==========================================================
+   FORM GROUP
+   ========================================================== */
 
 .form-group {
     margin-bottom: 20px;
 }
 
-label {
+
+/* ==========================================================
+   LABEL
+   ========================================================== */
+
+.form-group label {
     display: block;
+
     margin-bottom: 7px;
-    font-weight: bold;
+
+    color: #374151;
+
+    font-size: 14px;
+
+    font-weight: 650;
 }
 
-input {
+
+/* ==========================================================
+   INPUTS
+   ========================================================== */
+
+.form-group input {
     width: 100%;
-    padding: 12px;
-    border: 1px solid #ccc;
-    border-radius: 7px;
-    font-size: 15px;
-}
 
-input:focus {
+    min-height: 46px;
+
+    padding:
+        11px 13px;
+
+    background: #ffffff;
+
+    color: #172033;
+
+    border:
+        1px solid #d1d5db;
+
+    border-radius: 9px;
+
     outline: none;
+
+    font-family: inherit;
+
+    font-size: 14px;
+
+    transition:
+        border-color .2s ease,
+        box-shadow .2s ease,
+        background .2s ease;
+}
+
+
+/* Placeholder */
+
+.form-group input::placeholder {
+    color: #9ca3af;
+}
+
+
+/* Focus */
+
+.form-group input:focus {
     border-color: #2563eb;
+
+    box-shadow:
+        0 0 0 3px
+        rgba(37, 99, 235, 0.12);
 }
 
-.status {
-    padding: 12px;
-    background: #f8fafc;
-    border-radius: 7px;
-    margin-bottom: 20px;
+
+/* Hover */
+
+.form-group input:hover {
+    border-color: #9ca3af;
 }
 
-.active {
-    color: green;
-    font-weight: bold;
-}
 
-.inactive {
-    color: red;
-    font-weight: bold;
-}
+/* ==========================================================
+   DATE INPUT
+   ========================================================== */
 
-button {
-    width: 100%;
-    padding: 13px;
-    border: none;
-    border-radius: 7px;
-    background: #111827;
-    color: white;
-    font-size: 16px;
+.form-group input[type="date"] {
     cursor: pointer;
 }
 
-button:hover {
-    background: #1f2937;
+
+/* ==========================================================
+   SAVE BUTTON
+   ========================================================== */
+
+button[type="submit"] {
+    width: 100%;
+
+    min-height: 48px;
+
+    margin-top: 5px;
+
+    padding:
+        12px 18px;
+
+    border: none;
+
+    border-radius: 9px;
+
+    background: #2563eb;
+
+    color: #ffffff;
+
+    font-family: inherit;
+
+    font-size: 14px;
+
+    font-weight: 700;
+
+    cursor: pointer;
+
+    transition:
+        background .2s ease,
+        transform .2s ease,
+        box-shadow .2s ease;
 }
+
+
+button[type="submit"]:hover {
+    background: #1d4ed8;
+
+    transform: translateY(-1px);
+
+    box-shadow:
+        0 6px 16px
+        rgba(37, 99, 235, 0.20);
+}
+
+
+button[type="submit"]:active {
+    transform: translateY(0);
+}
+
+
+/* ==========================================================
+   LINKS
+   ========================================================== */
 
 .links {
-    margin-top: 20px;
     display: flex;
+
+    align-items: center;
+
     justify-content: space-between;
+
+    gap: 15px;
+
+    margin-top: 22px;
+
+    padding-top: 20px;
+
+    border-top:
+        1px solid #edf0f4;
 }
 
+
 .links a {
-    text-decoration: none;
     color: #2563eb;
+
+    text-decoration: none;
+
+    font-size: 14px;
+
+    font-weight: 650;
+
+    transition:
+        color .2s ease;
+}
+
+
+.links a:hover {
+    color: #1d4ed8;
+
+    text-decoration: underline;
+}
+
+
+/* ==========================================================
+   FOCUS ACCESSIBILITY
+   ========================================================== */
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible {
+    outline:
+        3px solid
+        rgba(37, 99, 235, 0.25);
+
+    outline-offset: 2px;
+}
+
+
+/* ==========================================================
+   TABLET
+   ========================================================== */
+
+@media (max-width: 700px) {
+
+    .container {
+        max-width: 600px;
+
+        padding:
+            30px 18px;
+    }
+
+
+    .card {
+        padding: 27px;
+
+        border-radius: 16px;
+    }
+
+
+    .card h1 {
+        font-size: 25px;
+    }
+
+}
+
+
+/* ==========================================================
+   MOBILE
+   ========================================================== */
+
+@media (max-width: 600px) {
+
+    body {
+        background: #f5f7fb;
+    }
+
+
+    .container {
+        padding:
+            16px 12px;
+    }
+
+
+    .card {
+        padding: 21px;
+
+        border-radius: 14px;
+
+        box-shadow:
+            0 5px 20px
+            rgba(15, 23, 42, 0.05);
+    }
+
+
+    .card h1 {
+        margin-bottom: 20px;
+
+        font-size: 22px;
+    }
+
+
+    .status {
+        margin-bottom: 21px;
+
+        padding: 12px 13px;
+
+        font-size: 13px;
+    }
+
+
+    .active,
+    .inactive {
+        font-size: 12px;
+
+        padding:
+            4px 9px;
+    }
+
+
+    .form-group {
+        margin-bottom: 17px;
+    }
+
+
+    .form-group label {
+        font-size: 13px;
+
+        margin-bottom: 6px;
+    }
+
+
+    .form-group input {
+        min-height: 45px;
+
+        padding:
+            10px 12px;
+
+        font-size: 14px;
+
+        border-radius: 8px;
+    }
+
+
+    button[type="submit"] {
+        min-height: 47px;
+
+        margin-top: 3px;
+
+        font-size: 14px;
+    }
+
+
+    .links {
+        flex-direction: column;
+
+        align-items: stretch;
+
+        gap: 10px;
+
+        margin-top: 20px;
+
+        padding-top: 17px;
+    }
+
+
+    .links a {
+        display: flex;
+
+        align-items: center;
+
+        justify-content: center;
+
+        min-height: 42px;
+
+        padding:
+            9px 12px;
+
+        background: #f8fafc;
+
+        border:
+            1px solid #e5e7eb;
+
+        border-radius: 8px;
+
+        font-size: 13px;
+    }
+
+
+    .links a:hover {
+        background: #eff6ff;
+
+        text-decoration: none;
+    }
+
+}
+
+
+/* ==========================================================
+   SMALL PHONES
+   ========================================================== */
+
+@media (max-width: 400px) {
+
+    .container {
+        padding:
+            10px 8px;
+    }
+
+
+    .card {
+        padding: 17px;
+
+        border-radius: 12px;
+    }
+
+
+    .card h1 {
+        font-size: 20px;
+
+        margin-bottom: 17px;
+    }
+
+
+    .status {
+        flex-direction: column;
+
+        align-items: flex-start;
+
+        gap: 6px;
+
+        padding: 11px;
+    }
+
+
+    .form-group {
+        margin-bottom: 15px;
+    }
+
+
+    .form-group input {
+        min-height: 44px;
+
+        font-size: 13px;
+    }
+
+
+    button[type="submit"] {
+        min-height: 46px;
+
+        font-size: 13px;
+    }
+
+
+    .links a {
+        min-height: 40px;
+
+        font-size: 12px;
+    }
+
+}
+
+
+/* ==========================================================
+   VERY SMALL PHONES
+   ========================================================== */
+
+@media (max-width: 320px) {
+
+    .container {
+        padding:
+            7px 5px;
+    }
+
+
+    .card {
+        padding: 14px;
+    }
+
+
+    .card h1 {
+        font-size: 18px;
+    }
+
+
+    .status {
+        font-size: 12px;
+    }
+
+
+    .form-group label {
+        font-size: 12px;
+    }
+
+
+    .form-group input {
+        font-size: 12px;
+
+        min-height: 42px;
+    }
+
+
+    button[type="submit"] {
+        min-height: 44px;
+
+        font-size: 12px;
+    }
+
 }

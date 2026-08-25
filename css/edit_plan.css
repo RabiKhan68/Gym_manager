@@ -1,126 +1,528 @@
 /* ==========================================================
-   Edit Membership Plan Page - Styles
-   (Kept consistent with add_plan.css's tokens, since this
-   is the edit counterpart of the same form.)
+   GYM MANAGER — EDIT MEMBERSHIP PLAN
+   Modern SaaS Form UI
+   Fully Responsive
    ========================================================== */
 
 * {
     box-sizing: border-box;
 }
 
+html {
+    scroll-behavior: smooth;
+}
+
 body {
     margin: 0;
-    font-family: Arial, sans-serif;
-    background: #f4f6f8;
-    color: #222;
+    min-height: 100vh;
+
+    font-family:
+        Inter,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        Arial,
+        sans-serif;
+
+    background: #f5f7fb;
+    color: #172033;
+
+    line-height: 1.5;
+
+    padding: 40px 24px;
 }
 
-.container {
-    max-width: 650px;
-    margin: 40px auto;
-    padding: 20px;
-}
 
-.card {
-    background: white;
-    padding: 30px;
-    border-radius: 12px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
-}
+/* ==========================================================
+   PAGE HEADING
+   ========================================================== */
 
 h1 {
-    margin-top: 0;
-    margin-bottom: 25px;
-}
-
-.form-group {
-    margin-bottom: 20px;
-}
-
-label {
-    display: block;
-    margin-bottom: 7px;
-    font-weight: bold;
-}
-
-input,
-textarea {
     width: 100%;
-    padding: 12px;
-    border: 1px solid #ccc;
-    border-radius: 7px;
-    font-size: 15px;
-    font-family: Arial, sans-serif;
+    max-width: 650px;
+
+    margin: 0 auto 24px;
+
+    font-size: 28px;
+    font-weight: 750;
+
+    color: #172033;
 }
 
-textarea {
-    resize: vertical;
-    min-height: 100px;
+
+/* ==========================================================
+   FORM
+   ========================================================== */
+
+form {
+    width: 100%;
+    max-width: 650px;
+
+    margin: 0 auto;
+
+    padding: 32px;
+
+    background: #ffffff;
+
+    border: 1px solid #e7ebf2;
+
+    border-radius: 18px;
+
+    box-shadow:
+        0 8px 30px
+        rgba(15, 23, 42, 0.06);
 }
 
-input:focus,
-textarea:focus {
-    outline: none;
-    border-color: #2563eb;
-}
 
-.hint {
-    margin-top: 6px;
-    font-size: 13px;
-    color: #777;
-}
+/* ==========================================================
+   LABELS
+   ========================================================== */
 
-.actions {
-    display: flex;
-    gap: 10px;
-    margin-top: 25px;
-}
+form label {
+    display: block;
 
-button,
-.cancel-button {
-    flex: 1;
-    padding: 13px;
-    border-radius: 7px;
-    font-size: 15px;
-    text-align: center;
-    text-decoration: none;
-    cursor: pointer;
-}
+    margin-bottom: 7px;
 
-button {
-    border: none;
-    background: #111827;
-    color: white;
-}
-
-button:hover {
-    background: #1f2937;
-}
-
-.cancel-button {
-    border: 1px solid #ccc;
-    background: white;
     color: #374151;
+
+    font-size: 14px;
+
+    font-weight: 650;
 }
 
-.cancel-button:hover {
-    background: #f3f4f6;
+
+/* ==========================================================
+   INPUTS
+   ========================================================== */
+
+form input[type="text"],
+form input[type="number"],
+form textarea {
+    display: block;
+
+    width: 100%;
+
+    padding: 12px 13px;
+
+    background: #ffffff;
+
+    color: #172033;
+
+    border:
+        1px solid #d1d5db;
+
+    border-radius: 9px;
+
+    outline: none;
+
+    font-family: inherit;
+
+    font-size: 14px;
+
+    transition:
+        border-color .2s ease,
+        box-shadow .2s ease,
+        background .2s ease;
 }
 
-/* MOBILE */
+
+/* ==========================================================
+   INPUT HEIGHTS
+   ========================================================== */
+
+form input[type="text"],
+form input[type="number"] {
+    min-height: 46px;
+}
+
+
+/* ==========================================================
+   TEXTAREA
+   ========================================================== */
+
+form textarea {
+    min-height: 125px;
+
+    resize: vertical;
+
+    line-height: 1.5;
+}
+
+
+/* ==========================================================
+   PLACEHOLDER
+   ========================================================== */
+
+form input::placeholder,
+form textarea::placeholder {
+    color: #9ca3af;
+}
+
+
+/* ==========================================================
+   FOCUS
+   ========================================================== */
+
+form input[type="text"]:focus,
+form input[type="number"]:focus,
+form textarea:focus {
+    border-color: #2563eb;
+
+    box-shadow:
+        0 0 0 3px
+        rgba(37, 99, 235, 0.12);
+}
+
+
+/* ==========================================================
+   HOVER
+   ========================================================== */
+
+form input[type="text"]:hover,
+form input[type="number"]:hover,
+form textarea:hover {
+    border-color: #9ca3af;
+}
+
+
+/* ==========================================================
+   NUMBER INPUT
+   ========================================================== */
+
+form input[type="number"] {
+    appearance: textfield;
+}
+
+
+/* ==========================================================
+   SAVE BUTTON
+   ========================================================== */
+
+form button[type="submit"] {
+    width: 100%;
+
+    min-height: 48px;
+
+    margin-top: 5px;
+
+    padding: 12px 18px;
+
+    border: none;
+
+    border-radius: 9px;
+
+    background: #2563eb;
+
+    color: #ffffff;
+
+    font-family: inherit;
+
+    font-size: 14px;
+
+    font-weight: 700;
+
+    cursor: pointer;
+
+    transition:
+        background .2s ease,
+        transform .2s ease,
+        box-shadow .2s ease;
+}
+
+
+form button[type="submit"]:hover {
+    background: #1d4ed8;
+
+    transform: translateY(-1px);
+
+    box-shadow:
+        0 6px 16px
+        rgba(37, 99, 235, 0.20);
+}
+
+
+form button[type="submit"]:active {
+    transform: translateY(0);
+}
+
+
+/* ==========================================================
+   CANCEL LINK
+   ========================================================== */
+
+body > a {
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    width: 100%;
+    max-width: 650px;
+
+    min-height: 45px;
+
+    margin: 18px auto 0;
+
+    padding: 10px 16px;
+
+    background: #ffffff;
+
+    color: #374151;
+
+    border:
+        1px solid #e5e7eb;
+
+    border-radius: 9px;
+
+    text-decoration: none;
+
+    font-size: 14px;
+
+    font-weight: 650;
+
+    transition:
+        background .2s ease,
+        border-color .2s ease,
+        color .2s ease,
+        transform .2s ease;
+}
+
+
+body > a:hover {
+    background: #f8fafc;
+
+    border-color: #d1d5db;
+
+    color: #172033;
+
+    transform: translateY(-1px);
+}
+
+
+/* ==========================================================
+   FOCUS ACCESSIBILITY
+   ========================================================== */
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible {
+    outline:
+        3px solid
+        rgba(37, 99, 235, 0.25);
+
+    outline-offset: 2px;
+}
+
+
+/* ==========================================================
+   TABLET
+   ========================================================== */
 
 @media (max-width: 700px) {
 
-    .container {
-        margin: 20px auto;
+    body {
+        padding:
+            30px 18px;
     }
 
-    .card {
-        padding: 20px;
+
+    h1 {
+        font-size: 25px;
+
+        margin-bottom: 20px;
     }
 
-    .actions {
-        flex-direction: column;
+
+    form {
+        padding: 27px;
+
+        border-radius: 16px;
+    }
+
+}
+
+
+/* ==========================================================
+   MOBILE
+   ========================================================== */
+
+@media (max-width: 600px) {
+
+    body {
+        padding:
+            18px 12px;
+    }
+
+
+    h1 {
+        font-size: 22px;
+
+        margin-bottom: 17px;
+    }
+
+
+    form {
+        padding: 21px;
+
+        border-radius: 14px;
+
+        box-shadow:
+            0 5px 20px
+            rgba(15, 23, 42, 0.05);
+    }
+
+
+    form label {
+        font-size: 13px;
+
+        margin-bottom: 6px;
+    }
+
+
+    form input[type="text"],
+    form input[type="number"],
+    form textarea {
+        font-size: 14px;
+
+        border-radius: 8px;
+    }
+
+
+    form input[type="text"],
+    form input[type="number"] {
+        min-height: 45px;
+    }
+
+
+    form textarea {
+        min-height: 115px;
+    }
+
+
+    form button[type="submit"] {
+        min-height: 47px;
+
+        font-size: 14px;
+    }
+
+
+    body > a {
+        min-height: 43px;
+
+        margin-top: 12px;
+
+        font-size: 13px;
+    }
+
+}
+
+
+/* ==========================================================
+   SMALL PHONES
+   ========================================================== */
+
+@media (max-width: 400px) {
+
+    body {
+        padding:
+            12px 8px;
+    }
+
+
+    h1 {
+        font-size: 20px;
+
+        margin-bottom: 14px;
+    }
+
+
+    form {
+        padding: 17px;
+
+        border-radius: 12px;
+    }
+
+
+    form label {
+        font-size: 12px;
+    }
+
+
+    form input[type="text"],
+    form input[type="number"],
+    form textarea {
+        font-size: 13px;
+    }
+
+
+    form input[type="text"],
+    form input[type="number"] {
+        min-height: 43px;
+    }
+
+
+    form textarea {
+        min-height: 105px;
+    }
+
+
+    form button[type="submit"] {
+        min-height: 45px;
+
+        font-size: 13px;
+    }
+
+
+    body > a {
+        min-height: 41px;
+
+        font-size: 12px;
+    }
+
+}
+
+
+/* ==========================================================
+   VERY SMALL PHONES
+   ========================================================== */
+
+@media (max-width: 320px) {
+
+    body {
+        padding:
+            8px 5px;
+    }
+
+
+    h1 {
+        font-size: 18px;
+    }
+
+
+    form {
+        padding: 14px;
+    }
+
+
+    form input[type="text"],
+    form input[type="number"],
+    form textarea {
+        font-size: 12px;
+    }
+
+
+    form input[type="text"],
+    form input[type="number"] {
+        min-height: 42px;
+    }
+
+
+    form button[type="submit"] {
+        min-height: 43px;
+
+        font-size: 12px;
     }
 
 }

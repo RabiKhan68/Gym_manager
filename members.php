@@ -2,7 +2,7 @@
 
 session_start();
 
-require_once "backend/db.php";
+require_once "backend/check_subscription.php";
 
 /*
     Automatically expire old memberships.

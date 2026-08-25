@@ -1,96 +1,559 @@
 /* ==========================================================
-   Create Your Gym Page - Styles
+   GYM MANAGER — CREATE GYM PAGE
+   Modern Responsive UI
    ========================================================== */
 
 * {
     box-sizing: border-box;
 }
 
+html {
+    scroll-behavior: smooth;
+}
+
 body {
     margin: 0;
+
     min-height: 100vh;
-    font-family: Arial, sans-serif;
-    background: linear-gradient(135deg, #111827, #2563eb);
+
     display: flex;
-    justify-content: center;
+
     align-items: center;
-    padding: 20px;
+
+    justify-content: center;
+
+    padding: 30px 20px;
+
+    font-family:
+        Inter,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        Arial,
+        sans-serif;
+
+    background: #f5f7fb;
+
+    color: #172033;
+
+    line-height: 1.5;
 }
+
+
+/* ==========================================================
+   CONTAINER
+   ========================================================== */
 
 .container {
     width: 100%;
-    max-width: 500px;
+
+    max-width: 620px;
+
+    margin: 0 auto;
 }
+
+
+/* ==========================================================
+   CARD
+   ========================================================== */
 
 .card {
-    background: white;
-    padding: 35px;
-    border-radius: 16px;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+    width: 100%;
+
+    background: #ffffff;
+
+    padding: 38px;
+
+    border:
+        1px solid #e7ebf2;
+
+    border-radius: 18px;
+
+    box-shadow:
+        0 8px 30px
+        rgba(15, 23, 42, 0.07);
 }
 
-h1 {
-    margin-top: 0;
-    color: #111827;
+
+/* ==========================================================
+   HEADING
+   ========================================================== */
+
+.card h1 {
+    margin: 0 0 10px;
+
+    color: #172033;
+
+    font-size: 29px;
+
+    font-weight: 750;
+
+    text-align: center;
 }
+
+
+/* ==========================================================
+   WELCOME MESSAGE
+   ========================================================== */
 
 .welcome {
-    color: #6b7280;
-    margin-bottom: 25px;
+    margin: 0 0 28px;
+
+    padding: 16px 18px;
+
+    background: #eff6ff;
+
+    border:
+        1px solid #bfdbfe;
+
+    border-radius: 11px;
+
+    color: #475569;
+
+    font-size: 14px;
+
+    line-height: 1.65;
+
+    text-align: center;
 }
+
+
+.welcome strong {
+    color: #1d4ed8;
+
+    font-weight: 750;
+}
+
+
+/* ==========================================================
+   FORM
+   ========================================================== */
+
+form {
+    width: 100%;
+}
+
+
+/* ==========================================================
+   FORM GROUP
+   ========================================================== */
 
 .form-group {
-    margin-bottom: 20px;
+    margin-bottom: 21px;
 }
 
-label {
+
+/* ==========================================================
+   LABEL
+   ========================================================== */
+
+.form-group label {
     display: block;
+
     margin-bottom: 8px;
-    font-weight: bold;
+
     color: #374151;
+
+    font-size: 14px;
+
+    font-weight: 700;
 }
 
-input,
-textarea {
+
+/* ==========================================================
+   INPUT
+   ========================================================== */
+
+.form-group input,
+.form-group textarea {
     width: 100%;
-    padding: 13px;
-    border: 1px solid #d1d5db;
-    border-radius: 8px;
-    font-size: 15px;
-}
 
-textarea {
-    min-height: 100px;
-    resize: vertical;
-}
+    padding: 12px 14px;
 
-input:focus,
-textarea:focus {
+    border:
+        1px solid #d7dde7;
+
+    border-radius: 9px;
+
+    background: #ffffff;
+
+    color: #172033;
+
+    font-family: inherit;
+
+    font-size: 14px;
+
     outline: none;
-    border-color: #2563eb;
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+
+    transition:
+        border-color .2s ease,
+        box-shadow .2s ease,
+        background .2s ease;
 }
+
+
+/* Input height */
+
+.form-group input {
+    min-height: 46px;
+}
+
+
+/* ==========================================================
+   TEXTAREA
+   ========================================================== */
+
+.form-group textarea {
+    min-height: 120px;
+
+    resize: vertical;
+
+    line-height: 1.5;
+}
+
+
+/* ==========================================================
+   PLACEHOLDER
+   ========================================================== */
+
+.form-group input::placeholder,
+.form-group textarea::placeholder {
+    color: #9ca3af;
+}
+
+
+/* ==========================================================
+   INPUT FOCUS
+   ========================================================== */
+
+.form-group input:focus,
+.form-group textarea:focus {
+    border-color: #2563eb;
+
+    background: #ffffff;
+
+    box-shadow:
+        0 0 0 3px
+        rgba(37, 99, 235, 0.10);
+}
+
+
+/* ==========================================================
+   PHONE INFORMATION
+   ========================================================== */
 
 .phone-info {
-    background: #eff6ff;
-    padding: 12px;
-    border-radius: 8px;
-    margin-bottom: 20px;
-    color: #1e40af;
+    margin: 5px 0 24px;
+
+    padding: 15px 17px;
+
+    background: #f8fafc;
+
+    border:
+        1px solid #e5e7eb;
+
+    border-radius: 10px;
+
+    color: #64748b;
+
+    font-size: 13px;
+
+    line-height: 1.65;
 }
 
-button {
+
+.phone-info strong {
+    color: #172033;
+
+    font-weight: 750;
+
+    word-break: break-word;
+}
+
+
+/* ==========================================================
+   CREATE BUTTON
+   ========================================================== */
+
+button[type="submit"] {
     width: 100%;
-    padding: 13px;
+
+    min-height: 48px;
+
+    padding: 12px 20px;
+
     border: none;
-    border-radius: 8px;
+
+    border-radius: 9px;
+
     background: #2563eb;
-    color: white;
-    font-size: 16px;
-    font-weight: bold;
+
+    color: #ffffff;
+
+    font-family: inherit;
+
+    font-size: 15px;
+
+    font-weight: 700;
+
     cursor: pointer;
+
+    transition:
+        background .2s ease,
+        transform .2s ease,
+        box-shadow .2s ease;
 }
 
-button:hover {
+
+button[type="submit"]:hover {
     background: #1d4ed8;
+
+    transform: translateY(-1px);
+
+    box-shadow:
+        0 6px 16px
+        rgba(37, 99, 235, 0.20);
+}
+
+
+button[type="submit"]:active {
+    transform: translateY(0);
+}
+
+
+/* ==========================================================
+   FOCUS
+   ========================================================== */
+
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible {
+    outline:
+        3px solid
+        rgba(37, 99, 235, 0.20);
+
+    outline-offset: 2px;
+}
+
+
+/* ==========================================================
+   TABLET
+   ========================================================== */
+
+@media (max-width: 700px) {
+
+    body {
+        padding: 24px 16px;
+    }
+
+
+    .card {
+        padding: 30px 25px;
+
+        border-radius: 16px;
+    }
+
+
+    .card h1 {
+        font-size: 26px;
+    }
+
+}
+
+
+/* ==========================================================
+   MOBILE
+   ========================================================== */
+
+@media (max-width: 600px) {
+
+    body {
+        align-items: flex-start;
+
+        padding:
+            18px 12px;
+    }
+
+
+    .container {
+        max-width: 100%;
+    }
+
+
+    .card {
+        padding:
+            25px 18px;
+
+        border-radius: 14px;
+    }
+
+
+    .card h1 {
+        font-size: 23px;
+
+        line-height: 1.3;
+    }
+
+
+    .welcome {
+        padding:
+            14px 13px;
+
+        margin-bottom: 23px;
+
+        font-size: 13px;
+    }
+
+
+    .form-group {
+        margin-bottom: 18px;
+    }
+
+
+    .form-group label {
+        font-size: 13px;
+    }
+
+
+    .form-group input,
+    .form-group textarea {
+        font-size: 14px;
+    }
+
+
+    .form-group input {
+        min-height: 45px;
+    }
+
+
+    .form-group textarea {
+        min-height: 110px;
+    }
+
+
+    .phone-info {
+        padding:
+            13px 14px;
+
+        font-size: 12px;
+
+        margin-bottom: 20px;
+    }
+
+
+    button[type="submit"] {
+        min-height: 47px;
+
+        font-size: 14px;
+    }
+
+}
+
+
+/* ==========================================================
+   SMALL PHONES
+   ========================================================== */
+
+@media (max-width: 400px) {
+
+    body {
+        padding:
+            12px 8px;
+    }
+
+
+    .card {
+        padding:
+            22px 14px;
+
+        border-radius: 12px;
+    }
+
+
+    .card h1 {
+        font-size: 21px;
+    }
+
+
+    .welcome {
+        font-size: 12px;
+
+        padding:
+            12px 10px;
+    }
+
+
+    .form-group label {
+        font-size: 12px;
+    }
+
+
+    .form-group input,
+    .form-group textarea {
+        font-size: 13px;
+
+        padding:
+            11px 12px;
+    }
+
+
+    .form-group input {
+        min-height: 43px;
+    }
+
+
+    .form-group textarea {
+        min-height: 100px;
+    }
+
+
+    .phone-info {
+        font-size: 11px;
+
+        padding:
+            12px;
+    }
+
+
+    button[type="submit"] {
+        min-height: 45px;
+
+        font-size: 13px;
+    }
+
+}
+
+
+/* ==========================================================
+   VERY SMALL PHONES
+   ========================================================== */
+
+@media (max-width: 320px) {
+
+    body {
+        padding:
+            8px 6px;
+    }
+
+
+    .card {
+        padding:
+            19px 11px;
+    }
+
+
+    .card h1 {
+        font-size: 19px;
+    }
+
+
+    .welcome {
+        font-size: 11px;
+    }
+
+
+    .phone-info {
+        font-size: 10px;
+    }
+
 }
