@@ -24,6 +24,38 @@ $admin_name = $_SESSION["admin_name"] ?? "Administrator";
 
 /*
 |--------------------------------------------------------------------------
+| Subscription Payment Notification
+|--------------------------------------------------------------------------
+|
+| Count submitted payments that are waiting for admin verification.
+|
+|--------------------------------------------------------------------------
+*/
+
+$notification_count = 0;
+
+$notification_sql = "
+    SELECT COUNT(*) AS total
+    FROM owner_subscription_payments
+    WHERE payment_status = 'submitted'
+    AND subscription_id IS NULL
+";
+
+$notification_result =
+    $conn->query($notification_sql);
+
+if ($notification_result) {
+
+    $notification_row =
+        $notification_result->fetch_assoc();
+
+    $notification_count =
+        (int) ($notification_row["total"] ?? 0);
+
+}
+
+/*
+|--------------------------------------------------------------------------
 | Total gym owners
 |--------------------------------------------------------------------------
 */
@@ -355,6 +387,61 @@ $owners_result = $conn->query($sql);
             color: #6b7280;
 
         }
+
+        /*
+|--------------------------------------------------------------------------
+| NOTIFICATION BADGE
+|--------------------------------------------------------------------------
+*/
+
+.notification-link {
+
+    position: relative;
+
+    display: inline-block;
+
+}
+
+
+.notification-badge {
+
+    position: absolute;
+
+    top: -9px;
+
+    right: -9px;
+
+    min-width: 22px;
+
+    height: 22px;
+
+    padding: 0 6px;
+
+    background: #dc2626;
+
+    color: white;
+
+    border-radius: 999px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    font-size: 12px;
+
+    font-weight: bold;
+
+    line-height: 1;
+
+    border: 2px solid white;
+
+    box-shadow:
+        0 2px 6px
+        rgba(0, 0, 0, 0.2);
+
+}
 
 
         /* STAT CARDS */
@@ -990,10 +1077,20 @@ $owners_result = $conn->query($sql);
 
     <a
         href="admin_subscription_payments.php"
-        class="button button-purple"
+        class="button button-purple notification-link"
     >
 
         View Payments
+
+        <?php if ($notification_count > 0): ?>
+
+        <span class="notification-badge">
+
+            <?php echo $notification_count; ?>
+
+        </span>
+
+    <?php endif; ?>
 
     </a>
 

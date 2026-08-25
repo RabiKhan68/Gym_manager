@@ -34,6 +34,38 @@ if (!isset($_SESSION["admin_id"])) {
 
 }
 
+/*
+|--------------------------------------------------------------------------
+| PENDING SUBSCRIPTION PAYMENT NOTIFICATION
+|--------------------------------------------------------------------------
+|
+| Count submitted payments that have not yet been linked
+| to a subscription.
+|
+|--------------------------------------------------------------------------
+*/
+
+$notification_count = 0;
+
+$notification_sql = "
+    SELECT COUNT(*) AS total
+    FROM owner_subscription_payments
+    WHERE payment_status = 'submitted'
+    AND subscription_id IS NULL
+";
+
+$notification_result =
+    $conn->query($notification_sql);
+
+if ($notification_result) {
+
+    $notification_row =
+        $notification_result->fetch_assoc();
+
+    $notification_count =
+        (int) ($notification_row["total"] ?? 0);
+
+}
 
 /*
 |--------------------------------------------------------------------------
@@ -350,6 +382,60 @@ while (
 
         }
 
+        /*
+|--------------------------------------------------------------------------
+| NOTIFICATION BADGE
+|--------------------------------------------------------------------------
+*/
+
+.notification-link {
+
+    position: relative;
+
+    display: inline-block;
+
+}
+
+
+.notification-badge {
+
+    position: absolute;
+
+    top: -9px;
+
+    right: -9px;
+
+    min-width: 22px;
+
+    height: 22px;
+
+    padding: 0 6px;
+
+    background: #dc2626;
+
+    color: white;
+
+    border-radius: 999px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    font-size: 12px;
+
+    font-weight: bold;
+
+    line-height: 1;
+
+    border: 2px solid white;
+
+    box-shadow:
+        0 2px 6px
+        rgba(0, 0, 0, 0.2);
+
+}
 
         /*
         |--------------------------------------------------------------------------
@@ -955,7 +1041,7 @@ while (
 
         <a
             href="admin_dashboard.php"
-            class="back"
+            class="back notification-link"
         >
 
             ← Dashboard
