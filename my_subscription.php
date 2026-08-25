@@ -1,9 +1,10 @@
 <?php
 
+date_default_timezone_set("Asia/Karachi");
+
 session_start();
 
 require_once "backend/db.php";
-
 
 /*
 |--------------------------------------------------------------------------
