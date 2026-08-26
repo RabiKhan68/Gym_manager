@@ -29,7 +29,9 @@ if (
     !isset($_FILES["register_image"]) ||
     $_FILES["register_image"]["error"] !== UPLOAD_ERR_OK
 ) {
+
     die("No valid image was uploaded.");
+
 }
 
 
@@ -42,9 +44,9 @@ $file = $_FILES["register_image"];
 |--------------------------------------------------------------------------
 */
 
-$max_size = 10 * 1024 * 1024; // 10 MB
+$max_file_size = 10 * 1024 * 1024; // 10 MB
 
-if ($file["size"] > $max_size) {
+if ($file["size"] > $max_file_size) {
 
     die(
         "Image is too large. Maximum allowed size is 10 MB."
@@ -97,11 +99,19 @@ $upload_dir =
 
 if (!is_dir($upload_dir)) {
 
-    mkdir(
-        $upload_dir,
-        0755,
-        true
-    );
+    if (
+        !mkdir(
+            $upload_dir,
+            0755,
+            true
+        )
+    ) {
+
+        die(
+            "Could not create OCR upload directory."
+        );
+
+    }
 
 }
 
@@ -147,7 +157,7 @@ if (
 
 /*
 |--------------------------------------------------------------------------
-| LOAD ORIGINAL IMAGE
+| LOAD IMAGE
 |--------------------------------------------------------------------------
 */
 
@@ -188,22 +198,56 @@ $height =
 
 /*
 |--------------------------------------------------------------------------
-| UPSCALE
+| MEMORY-SAFE RESIZE
 |--------------------------------------------------------------------------
 |
-| Handwritten text benefits from being enlarged before OCR.
+| We do NOT enlarge the image 3x.
+|
+| Instead, we make sure the longest side is
+| no larger than 2000 pixels.
 |
 |--------------------------------------------------------------------------
 */
 
-$scale = 3;
+$max_dimension = 2000;
+
+
+$resize_ratio =
+    min(
+        1,
+        $max_dimension /
+        max(
+            $width,
+            $height
+        )
+    );
+
 
 $new_width =
-    $width * $scale;
+    max(
+        1,
+        (int) round(
+            $width *
+            $resize_ratio
+        )
+    );
+
 
 $new_height =
-    $height * $scale;
+    max(
+        1,
+        (int) round(
+            $height *
+            $resize_ratio
+        )
+    );
 
+
+/*
+|--------------------------------------------------------------------------
+| CREATE RESIZED IMAGE
+|--------------------------------------------------------------------------
+*/
 
 $processed =
     imagecreatetruecolor(
@@ -211,6 +255,25 @@ $processed =
         $new_height
     );
 
+
+if (!$processed) {
+
+    imagedestroy($source);
+
+    @unlink($original_path);
+
+    die(
+        "Could not allocate image memory."
+    );
+
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| COPY / RESIZE
+|--------------------------------------------------------------------------
+*/
 
 imagecopyresampled(
     $processed,
@@ -224,6 +287,17 @@ imagecopyresampled(
     $width,
     $height
 );
+
+
+/*
+|--------------------------------------------------------------------------
+| DESTROY ORIGINAL
+|--------------------------------------------------------------------------
+*/
+
+imagedestroy($source);
+
+unset($source);
 
 
 /*
@@ -253,53 +327,39 @@ imagefilter(
 
 /*
 |--------------------------------------------------------------------------
-| SAVE FULL PROCESSED IMAGE
-|--------------------------------------------------------------------------
-*/
-
-$processed_path =
-    $upload_dir .
-    DIRECTORY_SEPARATOR .
-    $random_name .
-    "_processed.png";
-
-
-imagepng(
-    $processed,
-    $processed_path,
-    6
-);
-
-
-/*
-|--------------------------------------------------------------------------
 | CREATE LEFT / RIGHT CROPS
 |--------------------------------------------------------------------------
 |
-| Your register has:
+| Your register is approximately:
 |
 | LEFT  = names
 | RIGHT = phone numbers
 |
-| We use a small overlap so characters near the boundary
-| aren't unnecessarily cut.
+| We deliberately overlap the two areas.
 |
 |--------------------------------------------------------------------------
 */
 
 $left_crop_width =
-    (int) ($new_width * 0.60);
+    (int) round(
+        $new_width * 0.60
+    );
+
 
 $right_start =
-    (int) ($new_width * 0.40);
+    (int) round(
+        $new_width * 0.40
+    );
+
 
 $right_crop_width =
-    $new_width - $right_start;
+    $new_width -
+    $right_start;
 
 
 /*
 |--------------------------------------------------------------------------
-| LEFT IMAGE
+| LEFT / NAME CROP
 |--------------------------------------------------------------------------
 */
 
@@ -308,6 +368,19 @@ $left_image =
         $left_crop_width,
         $new_height
     );
+
+
+if (!$left_image) {
+
+    imagedestroy($processed);
+
+    @unlink($original_path);
+
+    die(
+        "Could not allocate name crop."
+    );
+
+}
 
 
 imagecopy(
@@ -329,16 +402,40 @@ $left_path =
     "_names.png";
 
 
-imagepng(
-    $left_image,
-    $left_path,
-    6
-);
+if (
+    !imagepng(
+        $left_image,
+        $left_path,
+        6
+    )
+) {
+
+    imagedestroy($left_image);
+    imagedestroy($processed);
+
+    @unlink($original_path);
+
+    die(
+        "Could not create name OCR image."
+    );
+
+}
 
 
 /*
 |--------------------------------------------------------------------------
-| RIGHT IMAGE
+| DESTROY LEFT GD IMAGE
+|--------------------------------------------------------------------------
+*/
+
+imagedestroy($left_image);
+
+unset($left_image);
+
+
+/*
+|--------------------------------------------------------------------------
+| RIGHT / PHONE CROP
 |--------------------------------------------------------------------------
 */
 
@@ -347,6 +444,20 @@ $right_image =
         $right_crop_width,
         $new_height
     );
+
+
+if (!$right_image) {
+
+    imagedestroy($processed);
+
+    @unlink($original_path);
+    @unlink($left_path);
+
+    die(
+        "Could not allocate phone crop."
+    );
+
+}
 
 
 imagecopy(
@@ -368,17 +479,49 @@ $right_path =
     "_phones.png";
 
 
-imagepng(
-    $right_image,
-    $right_path,
-    6
-);
+if (
+    !imagepng(
+        $right_image,
+        $right_path,
+        6
+    )
+) {
+
+    imagedestroy($right_image);
+    imagedestroy($processed);
+
+    @unlink($original_path);
+    @unlink($left_path);
+
+    die(
+        "Could not create phone OCR image."
+    );
+
+}
 
 
-imagedestroy($source);
-imagedestroy($processed);
-imagedestroy($left_image);
+/*
+|--------------------------------------------------------------------------
+| DESTROY ALL GD IMAGES
+|--------------------------------------------------------------------------
+*/
+
 imagedestroy($right_image);
+
+unset($right_image);
+
+imagedestroy($processed);
+
+unset($processed);
+
+
+/*
+|--------------------------------------------------------------------------
+| FORCE GARBAGE COLLECTION
+|--------------------------------------------------------------------------
+*/
+
+gc_collect_cycles();
 
 
 /*
@@ -393,19 +536,6 @@ $tesseract = "tesseract";
 /*
 |--------------------------------------------------------------------------
 | RUN TESSERACT TSV
-|--------------------------------------------------------------------------
-|
-| TSV gives us:
-|
-| text
-| confidence
-| x position
-| y position
-| width
-| height
-|
-| This allows us to match names and phone numbers by row.
-|
 |--------------------------------------------------------------------------
 */
 
@@ -442,9 +572,11 @@ function runTesseractTSV(
 
     return [
 
-        "output" => $output,
+        "output" =>
+            $output,
 
-        "return_code" => $return_code
+        "return_code" =>
+            $return_code
 
     ];
 
@@ -464,14 +596,18 @@ function parseTSV(
     $words = [];
 
 
-    foreach ($lines as $index => $line) {
+    foreach (
+        $lines as $index => $line
+    ) {
 
         /*
         | Skip TSV header
         */
 
         if ($index === 0) {
+
             continue;
+
         }
 
 
@@ -483,11 +619,15 @@ function parseTSV(
 
 
         /*
-        | Tesseract TSV has 12 columns
+        | Tesseract TSV contains 12 columns.
         */
 
-        if (count($columns) < 12) {
+        if (
+            count($columns) < 12
+        ) {
+
             continue;
+
         }
 
 
@@ -498,36 +638,47 @@ function parseTSV(
 
 
         if ($text === "") {
+
             continue;
+
         }
 
 
         $confidence =
-            (float) $columns[10];
+            (float)
+            $columns[10];
 
 
         $left =
-            (int) $columns[6];
+            (int)
+            $columns[6];
+
 
         $top =
-            (int) $columns[7];
+            (int)
+            $columns[7];
 
-        $width =
-            (int) $columns[8];
 
-        $height =
-            (int) $columns[9];
+        $word_width =
+            (int)
+            $columns[8];
+
+
+        $word_height =
+            (int)
+            $columns[9];
 
 
         /*
-        | Ignore extremely low-confidence garbage.
-        |
-        | We keep a fairly low threshold because handwriting
-        | can naturally receive lower OCR confidence.
+        | Ignore extremely low-confidence OCR.
         */
 
-        if ($confidence < 5) {
+        if (
+            $confidence < 5
+        ) {
+
             continue;
+
         }
 
 
@@ -546,13 +697,16 @@ function parseTSV(
                 $top,
 
             "width" =>
-                $width,
+                $word_width,
 
             "height" =>
-                $height,
+                $word_height,
 
             "center_y" =>
-                $top + ($height / 2)
+                $top +
+                (
+                    $word_height / 2
+                )
 
         ];
 
@@ -572,12 +726,15 @@ function parseTSV(
 
 function groupIntoRows(
     array $words,
-    $tolerance = 35
+    $tolerance = 30
 ) {
 
     usort(
         $words,
-        function ($a, $b) {
+        function (
+            $a,
+            $b
+        ) {
 
             return
                 $a["center_y"]
@@ -591,12 +748,16 @@ function groupIntoRows(
     $rows = [];
 
 
-    foreach ($words as $word) {
+    foreach (
+        $words as $word
+    ) {
 
         $placed = false;
 
 
-        foreach ($rows as &$row) {
+        foreach (
+            $rows as &$row
+        ) {
 
             if (
                 abs(
@@ -620,8 +781,11 @@ function groupIntoRows(
 
                 $row["center_y"] =
                     (
-                        $row["center_y"]
-                        * ($count - 1)
+                        (
+                            $row["center_y"]
+                            *
+                            ($count - 1)
+                        )
                         +
                         $word["center_y"]
                     )
@@ -659,14 +823,19 @@ function groupIntoRows(
 
 
     /*
-    | Sort words inside every row
+    | Sort words horizontally.
     */
 
-    foreach ($rows as &$row) {
+    foreach (
+        $rows as &$row
+    ) {
 
         usort(
             $row["words"],
-            function ($a, $b) {
+            function (
+                $a,
+                $b
+            ) {
 
                 return
                     $a["left"]
@@ -705,6 +874,10 @@ if (
     $name_result["return_code"] !== 0
 ) {
 
+    @unlink($original_path);
+    @unlink($left_path);
+    @unlink($right_path);
+
     die(
         "Name OCR failed."
     );
@@ -718,11 +891,23 @@ $name_words =
     );
 
 
+unset($name_result);
+
+
+/*
+|--------------------------------------------------------------------------
+| GROUP NAME ROWS
+|--------------------------------------------------------------------------
+*/
+
 $name_rows =
     groupIntoRows(
         $name_words,
-        40
+        30
     );
+
+
+unset($name_words);
 
 
 /*
@@ -730,9 +915,7 @@ $name_rows =
 | PHONE OCR
 |--------------------------------------------------------------------------
 |
-| IMPORTANT:
-|
-| Only digits are allowed.
+| Only numeric characters are allowed.
 |
 |--------------------------------------------------------------------------
 */
@@ -750,6 +933,10 @@ if (
     $phone_result["return_code"] !== 0
 ) {
 
+    @unlink($original_path);
+    @unlink($left_path);
+    @unlink($right_path);
+
     die(
         "Phone OCR failed."
     );
@@ -763,23 +950,37 @@ $phone_words =
     );
 
 
-$phone_rows =
-    groupIntoRows(
-        $phone_words,
-        40
-    );
+unset($phone_result);
 
 
 /*
 |--------------------------------------------------------------------------
-| BUILD NAME ROWS
+| GROUP PHONE ROWS
+|--------------------------------------------------------------------------
+*/
+
+$phone_rows =
+    groupIntoRows(
+        $phone_words,
+        30
+    );
+
+
+unset($phone_words);
+
+
+/*
+|--------------------------------------------------------------------------
+| BUILD NAME RECORDS
 |--------------------------------------------------------------------------
 */
 
 $name_records = [];
 
 
-foreach ($name_rows as $row) {
+foreach (
+    $name_rows as $row
+) {
 
     $text_parts = [];
 
@@ -788,7 +989,9 @@ foreach ($name_rows as $row) {
     $confidence_count = 0;
 
 
-    foreach ($row["words"] as $word) {
+    foreach (
+        $row["words"] as $word
+    ) {
 
         $text_parts[] =
             $word["text"];
@@ -813,7 +1016,7 @@ foreach ($name_rows as $row) {
 
 
     /*
-    | Remove leading numbering
+    | Remove numbering.
     */
 
     $name =
@@ -825,8 +1028,7 @@ foreach ($name_rows as $row) {
 
 
     /*
-    | Keep letters and spaces.
-    | This removes obvious OCR garbage.
+    | Keep normal name characters.
     */
 
     $name =
@@ -848,7 +1050,7 @@ foreach ($name_rows as $row) {
 
 
     /*
-    | Ignore headings
+    | Ignore headings.
     */
 
     $ignored = [
@@ -905,16 +1107,21 @@ foreach ($name_rows as $row) {
 }
 
 
+unset($name_rows);
+
+
 /*
 |--------------------------------------------------------------------------
-| BUILD PHONE ROWS
+| BUILD PHONE RECORDS
 |--------------------------------------------------------------------------
 */
 
 $phone_records = [];
 
 
-foreach ($phone_rows as $row) {
+foreach (
+    $phone_rows as $row
+) {
 
     $digits = "";
 
@@ -923,7 +1130,9 @@ foreach ($phone_rows as $row) {
     $confidence_count = 0;
 
 
-    foreach ($row["words"] as $word) {
+    foreach (
+        $row["words"] as $word
+    ) {
 
         $digits .=
             $word["text"];
@@ -939,7 +1148,7 @@ foreach ($phone_rows as $row) {
 
 
     /*
-    | Keep digits only
+    | Digits only.
     */
 
     $digits =
@@ -951,10 +1160,8 @@ foreach ($phone_rows as $row) {
 
 
     /*
-    | Handle OCR missing the leading 0.
-    |
-    | We only do this if the number looks like
-    | a 10-digit Pakistani mobile number.
+    | If Tesseract misses the leading zero,
+    | restore it when the number starts with 3.
     */
 
     if (
@@ -972,7 +1179,7 @@ foreach ($phone_rows as $row) {
 
 
     /*
-    | Validate Pakistani mobile number.
+    | Pakistani mobile number validation.
     */
 
     if (
@@ -1013,23 +1220,31 @@ foreach ($phone_rows as $row) {
 }
 
 
+unset($phone_rows);
+
+
 /*
 |--------------------------------------------------------------------------
-| MATCH PHONE TO NAME BY VERTICAL POSITION
+| MATCH NAME + PHONE BY VERTICAL POSITION
 |--------------------------------------------------------------------------
 */
 
 $members = [];
 
 
-foreach ($name_records as $name_record) {
+foreach (
+    $name_records as $name_record
+) {
 
     $best_phone = null;
 
-    $best_distance = PHP_INT_MAX;
+    $best_distance =
+        PHP_INT_MAX;
 
 
-    foreach ($phone_records as $phone_record) {
+    foreach (
+        $phone_records as $phone_record
+    ) {
 
         $distance =
             abs(
@@ -1040,7 +1255,8 @@ foreach ($name_records as $name_record) {
 
 
         if (
-            $distance < $best_distance
+            $distance <
+            $best_distance
         ) {
 
             $best_distance =
@@ -1055,8 +1271,8 @@ foreach ($name_records as $name_record) {
 
 
     /*
-    | 120 pixels is a reasonable maximum after
-    | our 3x enlargement.
+    | Match only if the phone is reasonably
+    | close to the name's row.
     */
 
     if (
@@ -1081,7 +1297,7 @@ foreach ($name_records as $name_record) {
 
     /*
     |--------------------------------------------------------------------------
-    | OVERALL STATUS
+    | RECORD STATUS
     |--------------------------------------------------------------------------
     */
 
@@ -1126,23 +1342,21 @@ foreach ($name_records as $name_record) {
 
 /*
 |--------------------------------------------------------------------------
-| SAVE SESSION
+| SAVE OCR DATA TO SESSION
 |--------------------------------------------------------------------------
 */
 
 $_SESSION["ocr_members"] =
     $members;
 
+
 $_SESSION["ocr_original"] =
     $original_path;
-
-$_SESSION["ocr_processed"] =
-    $processed_path;
 
 
 /*
 |--------------------------------------------------------------------------
-| DEBUG OCR TEXT
+| SAVE DEBUG INFORMATION
 |--------------------------------------------------------------------------
 */
 
@@ -1159,7 +1373,12 @@ $_SESSION["ocr_debug"] = [
 
 /*
 |--------------------------------------------------------------------------
-| CLEAN TEMP CROPS
+| DELETE TEMP CROPS
+|--------------------------------------------------------------------------
+|
+| The original uploaded image is kept for now.
+| The temporary OCR crops are deleted.
+|
 |--------------------------------------------------------------------------
 */
 
@@ -1178,12 +1397,11 @@ if (
     count($members) === 0
 ) {
 
+    @unlink($original_path);
+
     die(
-
-        "No members could be detected. "
-        .
+        "No members could be detected. " .
         "Please upload a clearer image."
-
     );
 
 }
@@ -1191,7 +1409,7 @@ if (
 
 /*
 |--------------------------------------------------------------------------
-| GO TO REVIEW
+| REDIRECT TO REVIEW PAGE
 |--------------------------------------------------------------------------
 */
 
