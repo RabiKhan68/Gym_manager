@@ -200,9 +200,15 @@ $height =
 |--------------------------------------------------------------------------
 | MEMORY-SAFE RESIZE
 |--------------------------------------------------------------------------
+|
+| Keep the image large enough for handwriting OCR,
+| but don't allow huge phone-camera images to
+| consume Render's memory.
+|
+|--------------------------------------------------------------------------
 */
 
-$max_dimension = 2000;
+$max_dimension = 1800;
 
 
 $resize_ratio =
@@ -238,7 +244,7 @@ $new_height =
 
 /*
 |--------------------------------------------------------------------------
-| CREATE PROCESSED IMAGE
+| CREATE RESIZED IMAGE
 |--------------------------------------------------------------------------
 */
 
@@ -295,7 +301,11 @@ unset($source);
 
 /*
 |--------------------------------------------------------------------------
-| GRAYSCALE
+| LIGHT IMAGE PROCESSING
+|--------------------------------------------------------------------------
+|
+| Do NOT aggressively alter the handwriting.
+|
 |--------------------------------------------------------------------------
 */
 
@@ -307,20 +317,7 @@ imagefilter(
 
 /*
 |--------------------------------------------------------------------------
-| CONTRAST
-|--------------------------------------------------------------------------
-*/
-
-imagefilter(
-    $processed,
-    IMG_FILTER_CONTRAST,
-    -20
-);
-
-
-/*
-|--------------------------------------------------------------------------
-| SAVE FULL PROCESSED IMAGE
+| SAVE OCR IMAGE
 |--------------------------------------------------------------------------
 */
 
@@ -352,140 +349,6 @@ if (
 
 /*
 |--------------------------------------------------------------------------
-| CREATE NAME CROP
-|--------------------------------------------------------------------------
-*/
-
-$left_crop_width =
-    (int) round(
-        $new_width * 0.70
-    );
-
-
-$left_image =
-    imagecreatetruecolor(
-        $left_crop_width,
-        $new_height
-    );
-
-
-if (!$left_image) {
-
-    imagedestroy($processed);
-
-    @unlink($original_path);
-    @unlink($processed_path);
-
-    die(
-        "Could not allocate name crop."
-    );
-
-}
-
-
-imagecopy(
-    $left_image,
-    $processed,
-    0,
-    0,
-    0,
-    0,
-    $left_crop_width,
-    $new_height
-);
-
-
-$left_path =
-    $upload_dir .
-    DIRECTORY_SEPARATOR .
-    $random_name .
-    "_names.png";
-
-
-imagepng(
-    $left_image,
-    $left_path,
-    6
-);
-
-
-imagedestroy($left_image);
-
-unset($left_image);
-
-
-/*
-|--------------------------------------------------------------------------
-| CREATE PHONE CROP
-|--------------------------------------------------------------------------
-*/
-
-$right_start =
-    (int) round(
-        $new_width * 0.35
-    );
-
-
-$right_crop_width =
-    $new_width -
-    $right_start;
-
-
-$right_image =
-    imagecreatetruecolor(
-        $right_crop_width,
-        $new_height
-    );
-
-
-if (!$right_image) {
-
-    imagedestroy($processed);
-
-    @unlink($original_path);
-    @unlink($processed_path);
-    @unlink($left_path);
-
-    die(
-        "Could not allocate phone crop."
-    );
-
-}
-
-
-imagecopy(
-    $right_image,
-    $processed,
-    0,
-    0,
-    $right_start,
-    0,
-    $right_crop_width,
-    $new_height
-);
-
-
-$right_path =
-    $upload_dir .
-    DIRECTORY_SEPARATOR .
-    $random_name .
-    "_phones.png";
-
-
-imagepng(
-    $right_image,
-    $right_path,
-    6
-);
-
-
-imagedestroy($right_image);
-
-unset($right_image);
-
-
-/*
-|--------------------------------------------------------------------------
 | DESTROY GD IMAGE
 |--------------------------------------------------------------------------
 */
@@ -508,15 +371,14 @@ $tesseract = "tesseract";
 
 /*
 |--------------------------------------------------------------------------
-| RUN TESSERACT
+| RUN TESSERACT TSV
 |--------------------------------------------------------------------------
 */
 
-function runTesseract(
+function runTesseractTSV(
     $tesseract,
     $image,
-    $psm,
-    $extra = ""
+    $psm = 6
 ) {
 
     $command =
@@ -526,8 +388,8 @@ function runTesseract(
         . " stdout"
         . " --psm "
         . intval($psm)
-        . " -l eng "
-        . $extra
+        . " -l eng"
+        . " tsv"
         . " 2>/dev/null";
 
 
@@ -545,13 +407,8 @@ function runTesseract(
 
     return [
 
-        "text" =>
-            trim(
-                implode(
-                    PHP_EOL,
-                    $output
-                )
-            ),
+        "output" =>
+            $output,
 
         "return_code" =>
             $return_code
@@ -563,133 +420,76 @@ function runTesseract(
 
 /*
 |--------------------------------------------------------------------------
-| RUN FULL IMAGE OCR
+| PARSE TSV WORDS
 |--------------------------------------------------------------------------
 */
 
-$full_result =
-    runTesseract(
-        $tesseract,
-        $processed_path,
-        6
-    );
-
-
-$full_text =
-    $full_result["text"];
-
-
-unset($full_result);
-
-
-/*
-|--------------------------------------------------------------------------
-| RUN NAME OCR
-|--------------------------------------------------------------------------
-*/
-
-$name_result =
-    runTesseract(
-        $tesseract,
-        $left_path,
-        6
-    );
-
-
-$name_text =
-    $name_result["text"];
-
-
-unset($name_result);
-
-
-/*
-|--------------------------------------------------------------------------
-| RUN PHONE OCR
-|--------------------------------------------------------------------------
-*/
-
-$phone_result =
-    runTesseract(
-        $tesseract,
-        $right_path,
-        6,
-        "-c tessedit_char_whitelist=0123456789"
-    );
-
-
-$phone_text =
-    $phone_result["text"];
-
-
-unset($phone_result);
-
-
-/*
-|--------------------------------------------------------------------------
-| CLEAN OCR LINES
-|--------------------------------------------------------------------------
-*/
-
-function cleanOCRLines(
-    $text
+function parseTSVWords(
+    array $lines
 ) {
 
-    if (
-        trim($text) === ""
-    ) {
-
-        return [];
-
-    }
-
-
-    $lines =
-        preg_split(
-            "/\R/",
-            $text
-        );
-
-
-    $clean = [];
+    $words = [];
 
 
     foreach (
-        $lines as $line
+        $lines as $index => $line
     ) {
 
-        $line =
-            trim($line);
+        /*
+        | Skip TSV header.
+        */
 
-
-        if ($line === "") {
+        if ($index === 0) {
 
             continue;
 
         }
+
+
+        $columns =
+            str_getcsv(
+                $line,
+                "\t"
+            );
 
 
         /*
-        | Ignore Tesseract diagnostics.
+        | Tesseract TSV has 12 columns.
         */
 
         if (
-            stripos(
-                $line,
-                "image too small"
-            ) !== false
+            count($columns) < 12
         ) {
 
             continue;
 
         }
 
+
+        $text =
+            trim(
+                $columns[11]
+            );
+
+
+        if ($text === "") {
+
+            continue;
+
+        }
+
+
+        $confidence =
+            (float)
+            $columns[10];
+
+
+        /*
+        | Ignore extremely poor OCR.
+        */
 
         if (
-            stripos(
-                $line,
-                "line cannot be recognized"
-            ) !== false
+            $confidence < 5
         ) {
 
             continue;
@@ -697,150 +497,331 @@ function cleanOCRLines(
         }
 
 
-        $clean[] =
-            $line;
+        $left =
+            (int)
+            $columns[6];
+
+
+        $top =
+            (int)
+            $columns[7];
+
+
+        $word_width =
+            (int)
+            $columns[8];
+
+
+        $word_height =
+            (int)
+            $columns[9];
+
+
+        $center_x =
+            $left +
+            (
+                $word_width / 2
+            );
+
+
+        $center_y =
+            $top +
+            (
+                $word_height / 2
+            );
+
+
+        $words[] = [
+
+            "text" =>
+                $text,
+
+            "confidence" =>
+                $confidence,
+
+            "left" =>
+                $left,
+
+            "top" =>
+                $top,
+
+            "width" =>
+                $word_width,
+
+            "height" =>
+                $word_height,
+
+            "center_x" =>
+                $center_x,
+
+            "center_y" =>
+                $center_y
+
+        ];
 
     }
 
 
-    return $clean;
+    return $words;
 
 }
 
 
 /*
 |--------------------------------------------------------------------------
-| PHONE EXTRACTION
+| GROUP WORDS INTO PHYSICAL ROWS
 |--------------------------------------------------------------------------
 */
 
-function extractPhones(
-    $text
+function groupWordsIntoRows(
+    array $words,
+    $tolerance = 45
 ) {
 
-    $phones = [];
+    usort(
+        $words,
+        function (
+            $a,
+            $b
+        ) {
 
+            return
+                $a["center_y"]
+                <=>
+                $b["center_y"];
 
-    /*
-    | Remove spaces, dashes and common separators
-    | around phone numbers.
-    */
-
-    $normalized =
-        preg_replace(
-            '/(?<=\d)[\s\-]+(?=\d)/',
-            "",
-            $text
-        );
-
-
-    /*
-    | Find Pakistani mobile numbers.
-    */
-
-    preg_match_all(
-        '/(?:03\d{9}|3\d{9})/',
-        $normalized,
-        $matches
+        }
     );
 
 
-    if (
-        !empty($matches[0])
+    $rows = [];
+
+
+    foreach (
+        $words as $word
     ) {
 
+        $placed = false;
+
+
         foreach (
-            $matches[0] as $phone
+            $rows as &$row
         ) {
 
-            $phone =
-                preg_replace(
-                    '/\D/',
-                    "",
-                    $phone
-                );
-
-
-            /*
-            | Restore leading zero.
-            */
-
             if (
-                strlen($phone) === 10 &&
-                str_starts_with(
-                    $phone,
-                    "3"
+                abs(
+                    $row["center_y"]
+                    -
+                    $word["center_y"]
                 )
+                <=
+                $tolerance
             ) {
 
-                $phone =
-                    "0" . $phone;
+                $row["words"][] =
+                    $word;
+
+
+                $count =
+                    count(
+                        $row["words"]
+                    );
+
+
+                $row["center_y"] =
+                    (
+                        (
+                            $row["center_y"]
+                            *
+                            ($count - 1)
+                        )
+                        +
+                        $word["center_y"]
+                    )
+                    /
+                    $count;
+
+
+                $placed = true;
+
+                break;
 
             }
 
+        }
 
-            if (
-                preg_match(
-                    '/^03\d{9}$/',
-                    $phone
-                )
-            ) {
 
-                $phones[] =
-                    $phone;
+        unset($row);
 
-            }
+
+        if (!$placed) {
+
+            $rows[] = [
+
+                "center_y" =>
+                    $word["center_y"],
+
+                "words" =>
+                    [$word]
+
+            ];
 
         }
 
     }
 
 
-    return array_values(
-        array_unique(
-            $phones
-        )
-    );
+    /*
+    | Sort words from left to right.
+    */
+
+    foreach (
+        $rows as &$row
+    ) {
+
+        usort(
+            $row["words"],
+            function (
+                $a,
+                $b
+            ) {
+
+                return
+                    $a["left"]
+                    <=>
+                    $b["left"];
+
+            }
+        );
+
+    }
+
+
+    unset($row);
+
+
+    return $rows;
 
 }
 
 
 /*
 |--------------------------------------------------------------------------
-| NAME CLEANING
+| NORMALIZE OCR DIGITS
+|--------------------------------------------------------------------------
+|
+| Handwritten digits are often interpreted as letters:
+|
+| O → 0
+| I → 1
+| l → 1
+| S → 5
+| Z → 2
+| B → 8
+|
 |--------------------------------------------------------------------------
 */
 
-function cleanName(
+function normalizePhoneOCR(
+    $text
+) {
+
+    $text =
+        strtoupper(
+            trim($text)
+        );
+
+
+    $text =
+        strtr(
+            $text,
+            [
+
+                "O" => "0",
+                "Q" => "0",
+
+                "I" => "1",
+                "L" => "1",
+
+                "S" => "5",
+
+                "Z" => "2"
+
+            ]
+        );
+
+
+    /*
+    | Keep digits only.
+    */
+
+    $digits =
+        preg_replace(
+            '/[^0-9]/',
+            "",
+            $text
+        );
+
+
+    /*
+    | Sometimes Tesseract misses the leading 0.
+    */
+
+    if (
+        strlen($digits) === 10 &&
+        str_starts_with(
+            $digits,
+            "3"
+        )
+    ) {
+
+        $digits =
+            "0" . $digits;
+
+    }
+
+
+    return $digits;
+
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| CLEAN NAME
+|--------------------------------------------------------------------------
+*/
+
+function cleanMemberName(
     $text
 ) {
 
     /*
-    | Remove leading numbering.
+    | Remove numbering at beginning.
     */
 
     $text =
         preg_replace(
-            '/^\s*[\d\.\-\)\:\_]+\s*/',
+            '/^\s*[\d\.\-\)\:\_\|]+\s*/',
             "",
             $text
         );
 
 
     /*
-    | Remove phone numbers.
+    | Remove obvious phone-like fragments.
     */
 
     $text =
         preg_replace(
-            '/03[\d\s\-]{9,15}/',
+            '/(?:03[\s\-]*)?\d[\d\s\-]{7,}/',
             "",
             $text
         );
 
 
     /*
-    | Keep letters, spaces, apostrophes and hyphens.
+    | Keep normal English name characters.
     */
 
     $text =
@@ -868,139 +849,321 @@ function cleanName(
 
 /*
 |--------------------------------------------------------------------------
-| EXTRACT NAMES FROM FULL OCR
+| IGNORE HEADER / NON-MEMBER WORDS
 |--------------------------------------------------------------------------
 */
 
-$full_lines =
-    cleanOCRLines(
-        $full_text
-    );
-
-
-$name_lines =
-    cleanOCRLines(
-        $name_text
-    );
-
-
-/*
-|--------------------------------------------------------------------------
-| COMBINE NAME SOURCES
-|--------------------------------------------------------------------------
-*/
-
-$possible_names = [];
-
-
-/*
-| First use the name crop.
-*/
-
-foreach (
-    $name_lines as $line
+function isIgnoredText(
+    $text
 ) {
 
-    $name =
-        cleanName(
-            $line
-        );
-
-
-    if (
-        strlen($name) >= 3
-    ) {
-
-        $possible_names[] =
-            $name;
-
-    }
-
-}
-
-
-/*
-| Then use full-image OCR as fallback/additional source.
-*/
-
-foreach (
-    $full_lines as $line
-) {
-
-    $name =
-        cleanName(
-            $line
-        );
-
-
-    if (
-        strlen($name) >= 3
-    ) {
-
-        $possible_names[] =
-            $name;
-
-    }
-
-}
-
-
-/*
-|--------------------------------------------------------------------------
-| REMOVE OBVIOUS HEADINGS
-|--------------------------------------------------------------------------
-*/
-
-$ignored_names = [
-
-    "member",
-    "members",
-    "member register",
-    "members register",
-    "name",
-    "names",
-    "phone",
-    "phone number",
-    "mobile",
-    "mobile number",
-    "gym register",
-    "gym members",
-    "register"
-
-];
-
-
-$final_names = [];
-
-
-foreach (
-    $possible_names as $name
-) {
-
-    $lower =
+    $normalized =
         strtolower(
-            trim($name)
+            trim($text)
         );
 
 
-    if (
-        in_array(
-            $lower,
-            $ignored_names,
-            true
-        )
+    $ignored = [
+
+        "member",
+        "members",
+        "member register",
+        "members register",
+        "register",
+        "name",
+        "names",
+        "phone",
+        "phone number",
+        "mobile",
+        "mobile number",
+        "gym register",
+        "gym members"
+
+    ];
+
+
+    return in_array(
+        $normalized,
+        $ignored,
+        true
+    );
+
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| RUN OCR
+|--------------------------------------------------------------------------
+*/
+
+$ocr_result =
+    runTesseractTSV(
+        $tesseract,
+        $processed_path,
+        6
+    );
+
+
+if (
+    $ocr_result["return_code"] !== 0
+) {
+
+    @unlink($original_path);
+    @unlink($processed_path);
+
+    die(
+        "Tesseract OCR failed."
+    );
+
+}
+
+
+$words =
+    parseTSVWords(
+        $ocr_result["output"]
+    );
+
+
+unset($ocr_result);
+
+
+/*
+|--------------------------------------------------------------------------
+| NO OCR WORDS
+|--------------------------------------------------------------------------
+*/
+
+if (
+    count($words) === 0
+) {
+
+    @unlink($original_path);
+    @unlink($processed_path);
+
+    die(
+        "Tesseract could not recognize any text."
+    );
+
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| GROUP PHYSICAL ROWS
+|--------------------------------------------------------------------------
+*/
+
+$rows =
+    groupWordsIntoRows(
+        $words,
+        45
+    );
+
+
+unset($words);
+
+
+/*
+|--------------------------------------------------------------------------
+| IMAGE COLUMN DIVISION
+|--------------------------------------------------------------------------
+|
+| Your register has:
+|
+| LEFT  → names
+| RIGHT → phone numbers
+|
+| We use approximately 55% as the divider.
+|
+|--------------------------------------------------------------------------
+*/
+
+$image_center =
+    0;
+
+
+/*
+|--------------------------------------------------------------------------
+| FIND APPROXIMATE IMAGE WIDTH
+|--------------------------------------------------------------------------
+*/
+
+$info =
+    @getimagesize(
+        $processed_path
+    );
+
+
+if (
+    $info &&
+    isset($info[0])
+) {
+
+    $image_width =
+        (int) $info[0];
+
+} else {
+
+    $image_width = 1800;
+
+}
+
+
+$column_divider =
+    $image_width * 0.55;
+
+
+/*
+|--------------------------------------------------------------------------
+| BUILD MEMBER RECORDS
+|--------------------------------------------------------------------------
+*/
+
+$members = [];
+
+
+foreach (
+    $rows as $row
+) {
+
+    $name_parts = [];
+
+    $phone_parts = [];
+
+    $name_confidence = [];
+
+    $phone_confidence = [];
+
+
+    foreach (
+        $row["words"] as $word
     ) {
 
-        continue;
+        $text =
+            trim(
+                $word["text"]
+            );
+
+
+        if (
+            $text === ""
+        ) {
+
+            continue;
+
+        }
+
+
+        /*
+        | Skip heading-like rows.
+        */
+
+        if (
+            isIgnoredText($text)
+        ) {
+
+            continue;
+
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | PHONE SIDE
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+            $word["center_x"]
+            >=
+            $column_divider
+        ) {
+
+            $phone_parts[] =
+                $text;
+
+
+            $phone_confidence[] =
+                $word["confidence"];
+
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | NAME SIDE
+        |--------------------------------------------------------------------------
+        */
+
+        else {
+
+            $name_parts[] =
+                $text;
+
+
+            $name_confidence[] =
+                $word["confidence"];
+
+        }
 
     }
 
 
     /*
-    | Ignore lines that are mostly too short.
+    |--------------------------------------------------------------------------
+    | BUILD NAME
+    |--------------------------------------------------------------------------
+    */
+
+    $raw_name =
+        trim(
+            implode(
+                " ",
+                $name_parts
+            )
+        );
+
+
+    $name =
+        cleanMemberName(
+            $raw_name
+        );
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | BUILD PHONE
+    |--------------------------------------------------------------------------
+    */
+
+    $raw_phone =
+        trim(
+            implode(
+                "",
+                $phone_parts
+            )
+        );
+
+
+    $phone =
+        normalizePhoneOCR(
+            $raw_phone
+        );
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | DETERMINE WHETHER THIS IS A REAL MEMBER ROW
+    |--------------------------------------------------------------------------
+    |
+    | A row should contain at least a plausible name.
+    |
+    |--------------------------------------------------------------------------
     */
 
     if (
+        $name === "" ||
         strlen($name) < 3
     ) {
 
@@ -1010,135 +1173,91 @@ foreach (
 
 
     /*
-    | Avoid duplicate names.
+    | Ignore obvious headers.
     */
 
-    $already_exists = false;
-
-
-    foreach (
-        $final_names as $existing
+    if (
+        isIgnoredText($name)
     ) {
 
-        if (
-            strtolower($existing)
-            ===
-            strtolower($name)
-        ) {
-
-            $already_exists = true;
-
-            break;
-
-        }
+        continue;
 
     }
-
-
-    if (!$already_exists) {
-
-        $final_names[] =
-            $name;
-
-    }
-
-}
-
-
-/*
-|--------------------------------------------------------------------------
-| EXTRACT PHONES
-|--------------------------------------------------------------------------
-*/
-
-$phones_from_phone_crop =
-    extractPhones(
-        $phone_text
-    );
-
-
-$phones_from_full_image =
-    extractPhones(
-        $full_text
-    );
-
-
-$phones =
-    array_values(
-        array_unique(
-            array_merge(
-                $phones_from_phone_crop,
-                $phones_from_full_image
-            )
-        )
-    );
-
-
-/*
-|--------------------------------------------------------------------------
-| BUILD MEMBERS
-|--------------------------------------------------------------------------
-|
-| For now we pair names and phone numbers by their
-| detected order.
-|
-| The review screen lets the owner correct anything.
-|
-|--------------------------------------------------------------------------
-*/
-
-$members = [];
-
-
-$name_count =
-    count(
-        $final_names
-    );
-
-
-$phone_count =
-    count(
-        $phones
-    );
-
-
-$member_count =
-    max(
-        $name_count,
-        $phone_count
-    );
-
-
-for (
-    $i = 0;
-    $i < $member_count;
-    $i++
-) {
-
-    $name =
-        $final_names[$i]
-        ??
-        "";
-
-
-    $phone =
-        $phones[$i]
-        ??
-        "";
 
 
     /*
-    | A record is good only if both fields exist.
+    |--------------------------------------------------------------------------
+    | CONFIDENCE
+    |--------------------------------------------------------------------------
     */
 
-    $status =
-        (
-            $name !== "" &&
-            $phone !== ""
-        )
-        ? "good"
-        : "review";
+    if (
+        count($name_confidence) > 0
+    ) {
 
+        $name_confidence_value =
+            array_sum(
+                $name_confidence
+            )
+            /
+            count(
+                $name_confidence
+            );
+
+    } else {
+
+        $name_confidence_value = 0;
+
+    }
+
+
+    if (
+        count($phone_confidence) > 0
+    ) {
+
+        $phone_confidence_value =
+            array_sum(
+                $phone_confidence
+            )
+            /
+            count(
+                $phone_confidence
+            );
+
+    } else {
+
+        $phone_confidence_value = 0;
+
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | STATUS
+    |--------------------------------------------------------------------------
+    */
+
+    $status = "review";
+
+
+    if (
+        preg_match(
+            '/^03\d{9}$/',
+            $phone
+        ) &&
+        $name_confidence_value >= 40
+    ) {
+
+        $status = "good";
+
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | ADD MEMBER
+    |--------------------------------------------------------------------------
+    */
 
     $members[] = [
 
@@ -1154,16 +1273,17 @@ for (
         "status" =>
             $status,
 
-        /*
-        | We don't have reliable TSV confidence
-        | in this fallback approach.
-        */
-
         "name_confidence" =>
-            0,
+            round(
+                $name_confidence_value,
+                1
+            ),
 
         "phone_confidence" =>
-            0
+            round(
+                $phone_confidence_value,
+                1
+            )
 
     ];
 
@@ -1172,33 +1292,91 @@ for (
 
 /*
 |--------------------------------------------------------------------------
-| SAVE DEBUG INFORMATION
+| REMOVE DUPLICATE MEMBERS
+|--------------------------------------------------------------------------
+*/
+
+$unique_members = [];
+
+
+$seen = [];
+
+
+foreach (
+    $members as $member
+) {
+
+    $key =
+        strtolower(
+            trim(
+                $member["name"]
+            )
+        )
+        .
+        "|"
+        .
+        trim(
+            $member["phone"]
+        );
+
+
+    if (
+        isset(
+            $seen[$key]
+        )
+    ) {
+
+        continue;
+
+    }
+
+
+    $seen[$key] = true;
+
+
+    $unique_members[] =
+        $member;
+
+}
+
+
+$members =
+    $unique_members;
+
+
+unset($unique_members);
+
+
+/*
+|--------------------------------------------------------------------------
+| SAVE DEBUG DATA
+|--------------------------------------------------------------------------
+|
+| Keep this while developing the OCR.
+|
 |--------------------------------------------------------------------------
 */
 
 $_SESSION["ocr_debug"] = [
 
-    "full_text" =>
-        $full_text,
+    "row_count" =>
+        count($rows),
 
-    "name_text" =>
-        $name_text,
+    "members" =>
+        $members,
 
-    "phone_text" =>
-        $phone_text,
+    "image_width" =>
+        $image_width,
 
-    "names" =>
-        $final_names,
-
-    "phones" =>
-        $phones
+    "column_divider" =>
+        $column_divider
 
 ];
 
 
 /*
 |--------------------------------------------------------------------------
-| SAVE MEMBERS
+| SAVE MEMBERS TO SESSION
 |--------------------------------------------------------------------------
 */
 
@@ -1216,17 +1394,6 @@ $_SESSION["ocr_processed"] =
 
 /*
 |--------------------------------------------------------------------------
-| DELETE TEMP CROPS
-|--------------------------------------------------------------------------
-*/
-
-@unlink($left_path);
-
-@unlink($right_path);
-
-
-/*
-|--------------------------------------------------------------------------
 | NO MEMBERS
 |--------------------------------------------------------------------------
 */
@@ -1236,14 +1403,12 @@ if (
 ) {
 
     /*
-    | Keep the processed image temporarily so
-    | we can inspect/debug it.
+    | Keep the processed image for debugging.
     */
 
     die(
-        "No members could be detected. " .
-        "Tesseract could not extract usable " .
-        "member information from this image."
+        "No member rows could be detected. " .
+        "Tesseract did not find usable name rows."
     );
 
 }
@@ -1251,7 +1416,7 @@ if (
 
 /*
 |--------------------------------------------------------------------------
-| REDIRECT TO REVIEW
+| REDIRECT TO REVIEW PAGE
 |--------------------------------------------------------------------------
 */
 
