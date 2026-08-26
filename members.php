@@ -273,6 +273,13 @@ $members = $stmt->get_result();
 
             </a>
 
+            <a
+                href="smart_member_import.php"
+                class="button"
+            >
+                📷 Smart Import
+            </a>
+
 
             <a
                 href="assign_membership.php"
