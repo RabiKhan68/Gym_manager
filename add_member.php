@@ -261,9 +261,9 @@ if (!isset($_SESSION["owner_id"])) {
 
                     Joining Date
 
-                    <span class="required">
+                    <!-- <span class="required">
                         *
-                    </span>
+                    </span> -->
 
                 </label>
 
@@ -272,14 +272,11 @@ if (!isset($_SESSION["owner_id"])) {
                     type="date"
                     id="joining_date"
                     name="joining_date"
-                    value="<?php echo date('Y-m-d'); ?>"
-                    required
                 >
-
 
                 <span class="hint">
 
-                    The date the member joined the gym.
+                    Optional. The date the member joined the gym.
 
                 </span>
 

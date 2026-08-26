@@ -708,12 +708,11 @@ if (
             |--------------------------------------------------------------------------
             */
 
+            // Required columns. Email and joining_date are optional.
             $required_columns = [
 
                 "name",
                 "phone",
-                "email",
-                "joining_date",
                 "status"
 
             ];
@@ -852,28 +851,30 @@ if (
                     );
 
 
+                // Email is optional. The column itself may also be omitted.
                 $email =
-                    trim(
-                        (string)
-                        (
+                    isset($column_map["email"])
+                    ? trim(
+                        (string) (
                             $row[
                                 $column_map["email"]
                             ] ?? ""
                         )
-                    );
+                    )
+                    : "";
 
 
+                // Joining date is optional. The column itself may also be omitted.
                 $joining_date =
-                    trim(
-                        (string)
-                        (
+                    isset($column_map["joining_date"])
+                    ? trim(
+                        (string) (
                             $row[
-                                $column_map[
-                                    "joining_date"
-                                ]
+                                $column_map["joining_date"]
                             ] ?? ""
                         )
-                    );
+                    )
+                    : "";
 
 
                 $status =
@@ -929,7 +930,14 @@ if (
                 */
 
                 if (
-                    $phone !== "" &&
+                    $phone === ""
+                ) {
+
+                    $row_errors[] =
+                        "Phone number is required.";
+
+                }
+                elseif (
                     !preg_match(
                         '/^[0-9+\-\s()]{7,20}$/',
                         $phone
@@ -971,15 +979,11 @@ if (
                 $normalized_date = "";
 
 
+                // Joining date is optional.
+                // Only validate it when a value was supplied.
                 if (
-                    $joining_date === ""
+                    $joining_date !== ""
                 ) {
-
-                    $row_errors[] =
-                        "Joining date is required.";
-
-                }
-                else {
 
                     /*
                     |--------------------------------------------------------------------------
@@ -1762,6 +1766,7 @@ if (
                             INSERT INTO members
                             (
                                 gym_id,
+                                member_number,
                                 name,
                                 phone,
                                 email,
@@ -1770,7 +1775,7 @@ if (
                             )
 
                             VALUES
-                            (?, ?, ?, ?, ?, ?)
+                            (?, ?, ?, ?, ?, ?, ?)
                         ";
 
 
@@ -1789,6 +1794,88 @@ if (
                             );
 
                         }
+
+
+                        /*
+                        |--------------------------------------------------------------------------
+                        | GET NEXT MEMBER NUMBER FOR THIS GYM
+                        |--------------------------------------------------------------------------
+                        |
+                        | member_id is the database-wide primary key.
+                        | member_number is the gym-facing number and starts
+                        | from 1 for each gym.
+                        |
+                        | We use the highest existing number + 1, so existing
+                        | members keep their numbers and new imports continue
+                        | from the correct number.
+                        |
+                        |--------------------------------------------------------------------------
+                        */
+
+                        $next_number_sql = "
+                            SELECT
+                                member_number
+                            FROM members
+                            WHERE gym_id = ?
+                            AND member_number IS NOT NULL
+                            ORDER BY member_number DESC
+                            LIMIT 1
+                            FOR UPDATE
+                        ";
+
+
+                        $next_number_stmt =
+                            $conn->prepare(
+                                $next_number_sql
+                            );
+
+
+                        if (
+                            !$next_number_stmt
+                        ) {
+
+                            throw new Exception(
+                                $conn->error
+                            );
+
+                        }
+
+
+                        $next_number_stmt->bind_param(
+                            "i",
+                            $gym_id
+                        );
+
+
+                        if (
+                            !$next_number_stmt->execute()
+                        ) {
+
+                            $next_number_stmt->close();
+
+                            throw new Exception(
+                                "Unable to determine the next member number."
+                            );
+
+                        }
+
+
+                        $next_number_result =
+                            $next_number_stmt->get_result();
+
+
+                        $next_number_row =
+                            $next_number_result->fetch_assoc();
+
+
+                        $next_number_stmt->close();
+
+
+                        $next_member_number =
+                            $next_number_row &&
+                            $next_number_row["member_number"] !== null
+                            ? (int) $next_number_row["member_number"] + 1
+                            : 1;
 
 
                         $imported_count = 0;
@@ -1913,14 +2000,39 @@ if (
                             |--------------------------------------------------------------------------
                             */
 
+                            // Store blank optional fields as SQL NULL.
+                            $member_number =
+                                $next_member_number;
+
+                            $member_name =
+                                $row["name"];
+
+                            $member_phone =
+                                $row["phone"];
+
+                            $member_email =
+                                $row["email"] !== ""
+                                ? $row["email"]
+                                : null;
+
+                            $member_joining_date =
+                                $row["joining_date"] !== ""
+                                ? $row["joining_date"]
+                                : null;
+
+                            $member_status =
+                                $row["status"];
+
+
                             $insert_stmt->bind_param(
-                                "isssss",
+                                "iisssss",
                                 $gym_id,
-                                $row["name"],
-                                $row["phone"],
-                                $row["email"],
-                                $row["joining_date"],
-                                $row["status"]
+                                $member_number,
+                                $member_name,
+                                $member_phone,
+                                $member_email,
+                                $member_joining_date,
+                                $member_status
                             );
 
 
@@ -1929,6 +2041,8 @@ if (
                             ) {
 
                                 $imported_count++;
+
+                                $next_member_number++;
 
                             }
                             else {
@@ -2682,6 +2796,7 @@ foreach (
 
             <p>
                 Add multiple gym members using an Excel file.
+                Member numbers are assigned automatically for your gym.
             </p>
 
         </div>
@@ -2880,11 +2995,17 @@ foreach (
                 </li>
 
                 <li>
-                    Phone and email are optional.
+                    <strong>name</strong> and
+                    <strong>phone</strong> are required.
                 </li>
 
                 <li>
-                    Joining date should preferably be
+                    <strong>email</strong> and
+                    <strong>joining date</strong> are optional.
+                </li>
+
+                <li>
+                    If a joining date is provided, it should preferably be
                     <strong>YYYY-MM-DD</strong>.
                 </li>
 
@@ -2893,6 +3014,11 @@ foreach (
                     <strong>active</strong>
                     or
                     <strong>inactive</strong>.
+                </li>
+
+                <li>
+                    <strong>Member numbers are assigned automatically</strong>
+                    starting from the next available number in your gym.
                 </li>
 
                 <?php if ($member_limit !== null): ?>

@@ -115,6 +115,7 @@ $current_month = date("Y-m-01");
 $sql = "SELECT
 
             m.member_id,
+            m.member_number,
             m.name,
             m.phone,
             m.email,
@@ -273,12 +274,12 @@ $members = $stmt->get_result();
 
             </a>
 
-            <a
+            <!-- <a
                 href="smart_member_import.php"
                 class="button"
             >
                 📷 Smart Import
-            </a>
+            </a> -->
 
 
             <a
@@ -358,7 +359,7 @@ $members = $stmt->get_result();
                 <tr>
 
                     <th>
-                        ID
+                        Member #
                     </th>
 
                     <th>
@@ -492,7 +493,9 @@ $members = $stmt->get_result();
                         <td>
 
                             <?php
-                            echo $member["member_id"];
+                            echo htmlspecialchars(
+                                $member["member_number"]
+                            );
                             ?>
 
                         </td>

@@ -92,6 +92,7 @@ $gym_id = $gym["gym_id"];
 $sql = "SELECT
 
             member_id,
+            member_number,
             name,
             phone,
             email,
@@ -587,6 +588,25 @@ function createWhatsAppUrl(
             Personal Information
             </h2>
 
+            <div class="info-row">
+
+    <span class="label">
+        Member #
+    </span>
+
+    <strong>
+
+        <?php
+
+        echo htmlspecialchars(
+            $member["member_number"]
+        );
+
+        ?>
+
+    </strong>
+
+</div>
 
             <div class="info-row">
 
@@ -663,13 +683,21 @@ function createWhatsAppUrl(
 
                     <?php
 
-                    echo htmlspecialchars(
-                        $member[
-                            "joining_date"
-                        ]
-                    );
+if (
+    !empty($member["joining_date"])
+) {
 
-                    ?>
+    echo htmlspecialchars(
+        $member["joining_date"]
+    );
+
+} else {
+
+    echo "—";
+
+}
+
+?>
 
                 </span>
 
