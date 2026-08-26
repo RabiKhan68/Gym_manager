@@ -1,7 +1,9 @@
 FROM php:8.2-cli
 
-# Install system dependencies and PHP extensions
+# Install system dependencies and Tesseract OCR
 RUN apt-get update && apt-get install -y \
+    tesseract-ocr \
+    libtesseract-dev \
     libpng-dev \
     libjpeg62-turbo-dev \
     libfreetype6-dev \
